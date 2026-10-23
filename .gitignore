@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.venv/
+.env
+.ipynb_checkpoints/
+
+# data and outputs are never committed
+data/raw/*
+data/interim/
+data/processed/
+!data/raw/.gitkeep
+outputs/*
+!outputs/.gitkeep
+*.ckpt
+*.pt
