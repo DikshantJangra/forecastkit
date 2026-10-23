@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "forecastkit"
+version = "0.1.0"
+description = "Open, model-agnostic probabilistic demand-forecasting toolkit: adapters, leak-safe backtesting, fair evaluation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "scipy>=1.10",
+  "pyyaml>=6.0",
+  "pyarrow>=14",
+  "matplotlib>=3.7",
+  "scikit-learn>=1.3",
+]
+
+[project.optional-dependencies]
+lgbm = ["lightgbm>=4.0"]
+deep = ["torch>=2.1"]
+dev = ["pytest>=7"]
+all = ["lightgbm>=4.0", "torch>=2.1", "pytest>=7"]
+
+[project.scripts]
+forecastkit = "forecastkit.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::UserWarning", "ignore::FutureWarning", "ignore::RuntimeWarning"]
