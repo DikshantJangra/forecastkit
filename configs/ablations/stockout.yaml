@@ -1,0 +1,9 @@
+# Stockout-handling sensitivity. Evaluation labels are FROZEN to the base rule for every variant.
+# forecastkit ablate configs/ablations/stockout.yaml
+base: configs/m5.yaml
+name: ablation_stockout
+models: [kalman, lgbm, deepar]
+variants:
+  rule_28d:   {}
+  rule_14d:   {masks.stockout.min_run: 14}
+  no_masking: {masks.stockout.enabled: false}

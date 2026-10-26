@@ -1,0 +1,12 @@
+# forecastkit ablate configs/ablations/deepar.yaml
+base: configs/m5.yaml
+name: ablation_deepar
+models: [deepar]
+variants:
+  full: {}
+  no_item_id:          {models.deepar.params.use_item_id: false}          # hierarchy embeddings only
+  no_price_covariates: {models.deepar.params.exclude_covariates: [log_price, price_rel_change, price_vs_mean, promo]}
+  gaussian_likelihood: {models.deepar.params.likelihood: gaussian}
+  context_56:          {models.deepar.params.context_length: 56}
+  context_112:         {models.deepar.params.context_length: 112}
+  no_loss_masking:     {models.deepar.params.use_mask: false}             # learn stockout zeros as demand

@@ -1,0 +1,50 @@
+# Fast end-to-end config on SYNTHETIC data in exact M5 file format (CI / demo / sanity check).
+#   forecastkit synth --out data/raw/m5_synth && forecastkit all configs/m5_smoke.yaml
+run_name: m5_smoke
+seed: 42
+output_dir: outputs
+cache_dir: data/processed
+
+dataset:
+  type: m5
+  params:
+    name: m5_synth
+    raw_dir: data/raw/m5_synth
+    subset_file: configs/subsets/m5_synth_subset.csv
+    stores: [CA_1, TX_1, WI_1]
+    items_per_store: 40
+    seed: 42
+
+masks:                       # MARK, never impute
+  leading_zeros: true        # zeros before the first sale = not launched, not demand
+  stockout:                  # PROXY for stockouts (M5 has no inventory data)
+    enabled: true
+    rule: zero_run
+    min_run: 28
+    adi_multiplier: 3.0
+    min_nonzero_events: 10
+
+backtest:
+  horizon: 28
+  n_origins: 4               # test origins; one extra earlier origin is reserved for validation/tuning
+  step: 28
+  val_origins: 1
+  quantiles: [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+  cold_start: {fraction: 0.08, history_days: 28, seed: 7}
+
+models:
+  naive:       {type: naive, params: {method: naive}}
+  snaive:      {type: seasonal_naive, params: {n_seasons: 1}}
+  snaive4:     {type: seasonal_naive, params: {n_seasons: 4}}
+  ma28:        {type: moving_average, params: {window: 28}}
+  kalman:      {type: kalman, params: {transform: sqrt, param_mode: grid, window: 365}}
+  lgbm:        {type: lgbm, params: {n_estimators: 80, train_days: 300, objective: poisson}}
+  kalman_lgbm: {type: kalman_lgbm, params: {n_estimators: 80, train_days: 300}}
+  deepar:      {type: deepar, params: {likelihood: negbin, steps: 500, finetune_steps: 200, context_length: 56, hidden: 40}}
+
+ensembles:
+  ens_global_local: [lgbm, kalman, deepar]
+
+evaluation:
+  reference_model: snaive4
+  slice_cols: [intermittency, volume_tier, cat_id, state_id]

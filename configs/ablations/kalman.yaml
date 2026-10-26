@@ -1,0 +1,11 @@
+base: configs/m5.yaml
+name: ablation_kalman
+models: [kalman]
+variants:
+  sqrt_grid:     {}
+  log1p_grid:    {models.kalman.params.transform: log1p}
+  none_grid:     {models.kalman.params.transform: none}
+  sqrt_shared:   {models.kalman.params.param_mode: shared}     # one shared noise ratio: faster, less adaptive
+  sqrt_fixed:    {models.kalman.params.param_mode: fixed}
+  window_180:    {models.kalman.params.window: 180}
+  no_masking:    {models.kalman.params.use_mask: false}

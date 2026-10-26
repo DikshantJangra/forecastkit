@@ -1,0 +1,11 @@
+base: configs/m5.yaml
+name: ablation_lgbm
+models: [lgbm]
+variants:
+  poisson:        {}
+  tweedie:        {models.lgbm.params.objective: tweedie}
+  l2:             {models.lgbm.params.objective: regression}
+  no_price:       {models.lgbm.params.exclude_covariates: [log_price, price_rel_change, price_vs_mean, promo]}
+  coarse_buckets: {models.lgbm.params.bucket_size: 14}
+  with_item_id:   {models.lgbm.params.use_item_id: true}
+  no_masking:     {models.lgbm.params.use_mask: false}

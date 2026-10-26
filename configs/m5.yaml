@@ -1,0 +1,56 @@
+# THE REAL RUN: M5 Forecasting - Accuracy, 3 stores (one per state) x ~400 stratified items.
+#   1) download the 3 files from Kaggle into data/raw/m5/  (calendar.csv, sell_prices.csv, sales_train_evaluation.csv)
+#   2) forecastkit subset configs/m5.yaml        # freezes configs/subsets/m5_subset.csv  -> COMMIT IT
+#   3) forecastkit all configs/m5.yaml           # backtest + tables + figures + RESULTS.md
+run_name: m5_main
+seed: 42
+output_dir: outputs
+cache_dir: data/processed
+
+dataset:
+  type: m5
+  params:
+    name: m5
+    raw_dir: data/raw/m5
+    subset_file: configs/subsets/m5_subset.csv
+    stores: [CA_1, TX_1, WI_1]
+    items_per_store: 400
+    seed: 42
+    last_days: 1000            # last ~2.7 years: plenty of history, faster than all 1941 days
+
+masks:                         # MARK, never impute
+  leading_zeros: true
+  stockout:                    # PROXY - M5 has no inventory data; state this in the report
+    enabled: true
+    rule: zero_run
+    min_run: 28                # sensitivity check: 14 vs 28 (configs/ablations/stockout.yaml)
+    adi_multiplier: 3.0
+    min_nonzero_events: 10
+
+backtest:
+  horizon: 28
+  n_origins: 4                 # last origin ends on d_1941; one earlier origin is validation/tuning only
+  step: 28
+  val_origins: 1
+  quantiles: [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+  cold_start: {fraction: 0.07, history_days: 28, seed: 7}   # simulated: ~7% of series show only their last 28 days
+
+models:
+  naive:       {type: naive, params: {method: naive}}
+  snaive:      {type: seasonal_naive, params: {n_seasons: 1}}
+  snaive4:     {type: seasonal_naive, params: {n_seasons: 4}}
+  ma28:        {type: moving_average, params: {window: 28}}
+  kalman:      {type: kalman, params: {transform: sqrt, param_mode: grid, window: 365}}          # LOCAL
+  lgbm:        {type: lgbm, params: {n_estimators: 200, train_days: 364, objective: poisson,
+                                      bucket_size: 7, num_threads: 4}}                          # TABULAR AML
+  kalman_lgbm: {type: kalman_lgbm, params: {n_estimators: 200, train_days: 364, num_threads: 4}}  # HYBRID
+  deepar:      {type: deepar, params: {likelihood: negbin, context_length: 84, hidden: 64, layers: 2,
+                                        steps: 2500, finetune_steps: 800, num_samples: 200,
+                                        use_item_id: true, device: auto}}                       # GLOBAL DL
+
+ensembles:
+  ens_global_local: [kalman, lgbm, deepar]
+
+evaluation:
+  reference_model: snaive4
+  slice_cols: [intermittency, volume_tier, cat_id, state_id]

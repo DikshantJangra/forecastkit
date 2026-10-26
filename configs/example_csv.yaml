@@ -1,0 +1,47 @@
+# SAME library, DIFFERENT dataset: a bakery sales CSV (no M5 anywhere). Only the adapter block changes.
+#   forecastkit synth --out data/raw/m5_synth --sample-csv examples/data/bakery.csv
+#   forecastkit all configs/example_csv.yaml
+run_name: bakery_demo
+seed: 1
+output_dir: outputs
+cache_dir: data/processed
+
+dataset:
+  type: csv
+  params:
+    name: bakery
+    path: examples/data/bakery.csv
+    series_cols: [shop, sku]
+    date_col: date
+    target_col: units
+    static_cols: [category]
+    known_cols: [price, promo]            # known-in-advance covariates
+    cat_cols: [shop, category]
+    day_slice_cols: [promo]
+    freq: D
+    season: 7
+
+masks:
+  leading_zeros: true
+  stockout: {enabled: true, rule: zero_run, min_run: 14, adi_multiplier: 3.0, min_nonzero_events: 8}
+
+backtest:
+  horizon: 14
+  n_origins: 4
+  step: 14
+  val_origins: 1
+  quantiles: [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+  cold_start: {fraction: 0.0}
+
+models:
+  snaive4: {type: seasonal_naive, params: {n_seasons: 4}}
+  kalman:  {type: kalman, params: {window: 300}}
+  lgbm:    {type: lgbm, params: {n_estimators: 80, train_days: 250, anchor_stride: 7, bucket_size: 7}}
+  deepar:  {type: deepar, params: {steps: 400, finetune_steps: 150, context_length: 42, hidden: 32, use_item_id: false}}
+
+ensembles:
+  ens_global_local: [kalman, lgbm, deepar]
+
+evaluation:
+  reference_model: snaive4
+  slice_cols: [intermittency, volume_tier, category, shop]
