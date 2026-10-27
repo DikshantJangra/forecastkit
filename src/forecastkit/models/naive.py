@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from forecastkit.schema import QuantileForecast
 from forecastkit.utils import register_model
+
 from .base import BaseForecaster
 
 
@@ -28,7 +28,7 @@ class NaiveForecaster(BaseForecaster):
         self._horizon = ctx.horizon
         if method == "seasonal":
             fitted = np.nanmean(np.stack([_shift(y, m * k) for k in range(1, n_s + 1)]), axis=0)
-            last = y[:, -m * n_s:]
+            y[:, -m * n_s:]
             # point forecast for day h: mean over k of y[T - m*k + ((h-1) % m) + 1 ... ] aligned weekday values
             H = ctx.horizon
             pt = np.zeros((ctx.N, H))

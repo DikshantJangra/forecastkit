@@ -23,7 +23,7 @@ class BaseForecaster(ABC):
         self.ctx: ForecastContext | None = None
 
     @abstractmethod
-    def fit(self, ctx: ForecastContext) -> "BaseForecaster":
+    def fit(self, ctx: ForecastContext) -> BaseForecaster:
         ...
 
     @abstractmethod

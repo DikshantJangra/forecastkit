@@ -1,0 +1,8 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": ["src", "tests", "scripts", "app.py"],
+  "extraPaths": ["src"],
+  "reportMissingImports": "none",
+  "reportMissingTypeStubs": false
+}

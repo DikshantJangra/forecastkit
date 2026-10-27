@@ -89,7 +89,7 @@ class Dataset:
             {"series_id": sid, "ds": ds, "y": self.Y.reshape(-1), "available": self.avail.reshape(-1)}
         )
 
-    def subset(self, mask: np.ndarray) -> "Dataset":
+    def subset(self, mask: np.ndarray) -> Dataset:
         mask = np.asarray(mask, dtype=bool)
         return Dataset(self.name, self.series_ids[mask], self.dates, self.Y[mask], self.avail[mask],
                        self.K[mask], self.known_names, self.static[mask], self.season, self.freq, dict(self.meta))
@@ -106,7 +106,7 @@ class Dataset:
              "freq": self.freq, "meta": self.meta}, default=str))
 
     @classmethod
-    def load(cls, path) -> "Dataset":
+    def load(cls, path) -> Dataset:
         path = Path(path)
         z = np.load(path / "arrays.npz", allow_pickle=False)
         meta = json.loads((path / "meta.json").read_text())

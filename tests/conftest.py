@@ -6,7 +6,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from forecastkit.datasets import load_dataset, make_synthetic_m5  # noqa: E402
+from forecastkit.datasets import make_synthetic_m5
 
 QS = [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
 
@@ -43,6 +43,6 @@ def cfg_copy(cfg):
 @pytest.fixture(scope="session")
 def ds(cfg):
     from forecastkit.backtest.runner import prepare
-    d, orig, info = prepare(cfg)
+    d, orig, _info = prepare(cfg)
     d._orig = orig
     return d

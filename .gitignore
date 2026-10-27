@@ -1,18 +1,45 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 *.egg-info/
-.pytest_cache/
-.venv/
-.env
-.ipynb_checkpoints/
+build/
+dist/
 
-# data and outputs are never committed
+# Virtual Environments & Testing
+.venv/
+env/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.env
+
+# Node & Frontend dependencies and build outputs
+node_modules/
+**/node_modules/
+**/dist/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Data, checkpoints, and backtest output runs
 data/raw/*
 data/interim/
 data/processed/
 !data/raw/.gitkeep
 outputs/*
 !outputs/.gitkeep
+runs/
 *.ckpt
 *.pt
 

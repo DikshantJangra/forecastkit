@@ -18,5 +18,5 @@ def set_seed(seed: int) -> None:
     try:
         import torch
         torch.manual_seed(seed)
-    except Exception:  # torch optional
+    except (ImportError, AttributeError):  # torch optional
         pass

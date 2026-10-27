@@ -47,4 +47,21 @@ ablations:
 demo-csv: synth
 	forecastkit all configs/example_csv.yaml
 
-.PHONY: install test synth smoke subset baselines kalman lgbm deepar evaluate report m5 ablations demo-csv
+streamlit:
+	streamlit run app.py
+
+site:
+	cd frontend && npm run dev
+
+build-site:
+	cd frontend && npm run build
+
+api:
+	forecastkit api --host 0.0.0.0 --port 8000
+
+hf-deploy:
+	@echo "Deploying to Hugging Face Space..."
+	./hf_spaces/deploy.sh $(SPACE)
+
+.PHONY: install test synth smoke subset baselines kalman lgbm deepar evaluate report m5 ablations demo-csv streamlit site build-site api hf-deploy
+

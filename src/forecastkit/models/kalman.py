@@ -17,8 +17,8 @@ from __future__ import annotations
 import numpy as np
 from scipy.stats import norm
 
-from forecastkit.schema import QuantileForecast
 from forecastkit.utils import register_model
+
 from .base import BaseForecaster
 
 TRANSFORMS = {

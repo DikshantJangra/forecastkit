@@ -20,8 +20,9 @@ import yaml
 
 from forecastkit.datasets import load_dataset
 from forecastkit.features.intermittency import classify_demand
-from forecastkit.schema import Dataset, q_stat
+from forecastkit.schema import q_stat
 from forecastkit.utils import get_model_class, log, set_seed
+
 from .context import build_context
 from .splitter import rolling_origins
 
@@ -43,7 +44,7 @@ def prepare(cfg: dict, use_cache: bool = True):
     if cs.get("fraction", 0) > 0:
         rng = np.random.default_rng(int(cs.get("seed", 7)))
         long_hist = np.where(ds.avail[:, :cutoff].sum(1) >= int(cs.get("min_history", 200)))[0]
-        n = max(1, int(round(cs["fraction"] * ds.N)))
+        n = max(1, round(cs["fraction"] * ds.N))
         cold[rng.choice(long_hist, size=min(n, len(long_hist)), replace=False)] = True
     info["intermittency"] = info["intermittency"].replace("no_sales", "new_item")  # nothing sold before first origin
     info["cold_start"] = cold
@@ -125,7 +126,7 @@ def _merge_save(df: pd.DataFrame, path: Path, only):
 
 
 def _to_long(model, series_ids, ctx, fc, qs) -> pd.DataFrame:
-    N, H, Q = fc.quantiles.shape
+    N, H, _Q = fc.quantiles.shape
     sid = np.repeat(series_ids, H)
     h = np.tile(np.arange(1, H + 1), N)
     ds_ = np.tile(ctx.fut_dates.values, N)
@@ -160,5 +161,5 @@ def _save_model_extras(model, out_dir: Path, mname: str):
             pick = [int(np.argmax(vol))]
         with open(out_dir / f"diag_{mname}.pkl", "wb") as f:
             pickle.dump({c.series_ids[i]: model.diagnostics(i) for i in pick}, f)
-    except Exception as e:  # diagnostics are optional
+    except Exception as e:  # noqa: BLE001 - diagnostics are optional
         log.warning("diagnostics skipped for %s: %s", mname, e)

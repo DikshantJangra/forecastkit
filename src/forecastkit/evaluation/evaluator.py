@@ -7,11 +7,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from forecastkit.backtest.runner import DEFAULT_QUANTILES, prepare
+from forecastkit.backtest.runner import prepare
 from forecastkit.masks import stockout_mask
-from .ensemble import add_ensembles
-from forecastkit.schema import q_stat
 from forecastkit.utils import log
+
+from .ensemble import add_ensembles
 
 
 class Errors:
@@ -62,7 +62,7 @@ class Evaluator:
     # ------------------------------------------------------------------ truth + cubes
     def _build_truth(self):
         ds = self.ds
-        O, N, H = len(self.origins), ds.N, self.H
+        O, _N, H = len(self.origins), ds.N, self.H
         oi = [int(ds.dates.get_loc(pd.Timestamp(o))) for o in self.origins]
         idx = np.array([[o + 1 + h for h in range(H)] for o in oi])             # [O,H] column indices
         eval_cfg = self.cfg.get("masks", {}).get("eval_stockout") or self.cfg.get("masks", {}).get("stockout")
@@ -160,7 +160,7 @@ class Evaluator:
     def by_horizon(self, hs=(1, 7, 14, 28), mode="all") -> pd.DataFrame:
         rows = []
         hs = sorted({h for h in hs if h <= self.H} | {self.H})
-        for h in list(hs) + ["1-%d" % self.H]:
+        for h in list(hs) + [f"1-{self.H}"]:
             sel = [h] if isinstance(h, int) else None
             t = self.table(self.valid(~self.cold, mode, h_sel=sel), {"h": h})
             rows.append(t)

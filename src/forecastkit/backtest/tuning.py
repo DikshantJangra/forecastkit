@@ -10,6 +10,7 @@ import yaml
 
 from forecastkit.evaluation.evaluator import Evaluator
 from forecastkit.utils import log
+
 from .runner import run_backtest
 
 DEFAULT_SPACES = {

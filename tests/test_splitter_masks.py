@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -13,7 +15,7 @@ def test_origins_are_ordered_non_overlapping_and_end_at_last_day():
     assert test == sorted(test) and val[-1] < test[0]
     assert test[-1] + 28 == len(dates) - 1                     # last window ends on the last day
     windows = [(t + 1, t + 28) for t in test]
-    for (a0, a1), (b0, b1) in zip(windows, windows[1:]):
+    for (a0, a1), (b0, b1) in itertools.pairwise(windows):
         assert a1 < b0                                         # non-overlapping
     assert max(val) + 28 < min(test) + 1                       # validation windows never touch test windows
 
@@ -53,7 +55,7 @@ def test_stockout_mask_does_not_look_past_the_end_of_the_array():
     y = _series(240)
     y[150:200] = 0
     avail = np.ones_like(y, dtype=bool)
-    full = stockout_mask(y[None], avail[None], CFG)[0]
+    stockout_mask(y[None], avail[None], CFG)[0]
     for cut in (120, 160, 180):                      # origin cuts INSIDE or before the run
         part = stockout_mask(y[None, :cut], avail[None, :cut], CFG)[0]
         # flags in the truncated history can only appear if the run is already long enough by then

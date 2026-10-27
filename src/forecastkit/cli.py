@@ -19,7 +19,7 @@ from pathlib import Path
 import pandas as pd
 
 from forecastkit.config import load_config
-from forecastkit.utils import log, setup_logging
+from forecastkit.utils import setup_logging
 
 
 def _cfg(args):
@@ -41,7 +41,7 @@ def cmd_synth(args):
 def cmd_subset(args):
     from forecastkit.backtest.runner import prepare
     cfg = _cfg(args)
-    ds, orig, info = prepare(cfg, use_cache=False)
+    ds, orig, _info = prepare(cfg, use_cache=False)
     print(ds.static.groupby(["cat_id" if "cat_id" in ds.static else ds.static.columns[0], "intermittency"]).size().unstack(fill_value=0))
     print("origins:", [str(ds.dates[o].date()) for o in orig["val"] + orig["test"]])
 
@@ -74,8 +74,9 @@ def cmd_all(args):
 
 
 def cmd_tune(args):
-    from forecastkit.backtest.tuning import tune_model
     import yaml
+
+    from forecastkit.backtest.tuning import tune_model
     cfg = _cfg(args)
     space = yaml.safe_load(Path(args.space).read_text()) if args.space else None
     res = tune_model(cfg, args.model, args.trials, args.seed, space)
@@ -91,11 +92,19 @@ def cmd_ablate(args):
 
 
 def cmd_list(args):
-    from forecastkit.utils.registry import DATASETS, MODELS
-    import forecastkit.datasets  # noqa: F401
+    import forecastkit.datasets
     import forecastkit.models  # noqa: F401
+    from forecastkit.utils.registry import DATASETS, MODELS
     print("models  :", sorted(MODELS))
     print("datasets:", sorted(DATASETS))
+
+
+def cmd_api(args):
+    import uvicorn
+
+    from forecastkit.api.server import app
+    print(f"Starting ForecastKit API server on http://{args.host}:{args.port}")
+    uvicorn.run(app, host=args.host, port=args.port)
 
 
 def main(argv=None):
@@ -127,6 +136,10 @@ def main(argv=None):
     p = sp.add_parser("ablate"); p.add_argument("spec"); p.add_argument("--set", action="append", default=[])
     p.set_defaults(fn=cmd_ablate)
     sp.add_parser("list").set_defaults(fn=cmd_list)
+    p_api = sp.add_parser("api")
+    p_api.add_argument("--host", default="0.0.0.0")
+    p_api.add_argument("--port", type=int, default=8000)
+    p_api.set_defaults(fn=cmd_api)
     args = ap.parse_args(argv)
     setup_logging(logging.DEBUG if args.verbose else logging.INFO)
     args.fn(args)

@@ -1,2 +1,2 @@
-from .registry import register_model, register_dataset, get_model_class, get_dataset_fn  # noqa: F401
-from .seed import set_seed, setup_logging, log  # noqa: F401
+from .registry import get_dataset_fn, get_model_class, register_dataset, register_model  # noqa: F401
+from .seed import log, set_seed, setup_logging  # noqa: F401

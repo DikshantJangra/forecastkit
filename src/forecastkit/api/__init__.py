@@ -1,0 +1,1 @@
+"""ForecastKit REST API package."""

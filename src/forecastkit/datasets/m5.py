@@ -18,6 +18,7 @@ import pandas as pd
 from forecastkit.features.calendar import calendar_features
 from forecastkit.schema import Dataset
 from forecastkit.utils import log, register_dataset
+
 from .subset import freeze, stratified_subset
 
 STATIC_COLS = ["item_id", "dept_id", "cat_id", "store_id", "state_id"]
@@ -89,7 +90,8 @@ def load_m5(raw_dir="data/raw/m5", subset_file=None, stores=("CA_1", "TX_1", "WI
 
     # ---- known-future covariates ---------------------------------------------
     cal_arr, cal_names = calendar_features(dates)
-    ev1, ev2 = cal["event_type_1"].fillna(""), cal["event_type_2"].fillna("")
+    ev1 = cal["event_type_1"].astype(object).fillna("")
+    ev2 = cal["event_type_2"].astype(object).fillna("")
     ev_flags = {f"event_{t.lower()}": ((ev1 == t) | (ev2 == t)).to_numpy(np.float32)
                 for t in ("Religious", "National", "Cultural", "Sporting")}
     ev_flags["event_any"] = ((ev1 != "") | (ev2 != "")).to_numpy(np.float32)

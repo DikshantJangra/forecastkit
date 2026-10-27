@@ -9,11 +9,13 @@ scored with pinball loss exactly like the probabilistic models (otherwise the co
 """
 from __future__ import annotations
 
+from typing import Any, ClassVar
+
 import numpy as np
 
 from forecastkit.features.tabular import TabularFeatures
-from forecastkit.schema import QuantileForecast
 from forecastkit.utils import log, register_model
+
 from .base import BaseForecaster
 
 try:
@@ -28,11 +30,13 @@ def _buckets(H, size):
 
 @register_model("lgbm")
 class LGBMForecaster(BaseForecaster):
-    DEFAULTS = dict(bucket_size=7, train_days=364, anchor_stride=7, objective="poisson", n_estimators=150,
-                    learning_rate=0.06, num_leaves=63, min_child_samples=80, feature_fraction=0.8,
-                    bagging_fraction=0.8, bagging_freq=1, lambda_l2=1.0, tweedie_variance_power=1.3,
-                    use_item_id=False, use_mask=True, include_covariates=None, exclude_covariates=None,
-                    num_threads=2, max_rows=600_000)
+    DEFAULTS: ClassVar[dict[str, Any]] = {
+        "bucket_size": 7, "train_days": 364, "anchor_stride": 7, "objective": "poisson", "n_estimators": 150,
+        "learning_rate": 0.06, "num_leaves": 63, "min_child_samples": 80, "feature_fraction": 0.8,
+        "bagging_fraction": 0.8, "bagging_freq": 1, "lambda_l2": 1.0, "tweedie_variance_power": 1.3,
+        "use_item_id": False, "use_mask": True, "include_covariates": None, "exclude_covariates": None,
+        "num_threads": 2, "max_rows": 600_000,
+    }
 
     def pp(self, k):
         return self.params.get(k, self.DEFAULTS[k])
@@ -55,11 +59,11 @@ class LGBMForecaster(BaseForecaster):
         return codes, cols
 
     def _lgb_params(self, **over):
-        p = dict(learning_rate=self.pp("learning_rate"), num_leaves=int(self.pp("num_leaves")),
-                 min_child_samples=int(self.pp("min_child_samples")), feature_fraction=self.pp("feature_fraction"),
-                 bagging_fraction=self.pp("bagging_fraction"), bagging_freq=int(self.pp("bagging_freq")),
-                 lambda_l2=self.pp("lambda_l2"), num_threads=int(self.pp("num_threads")), verbose=-1,
-                 seed=int(self.ctx.seed), deterministic=True, force_row_wise=True)
+        p = {"learning_rate": self.pp("learning_rate"), "num_leaves": int(self.pp("num_leaves")),
+                 "min_child_samples": int(self.pp("min_child_samples")), "feature_fraction": self.pp("feature_fraction"),
+                 "bagging_fraction": self.pp("bagging_fraction"), "bagging_freq": int(self.pp("bagging_freq")),
+                 "lambda_l2": self.pp("lambda_l2"), "num_threads": int(self.pp("num_threads")), "verbose": -1,
+                 "seed": int(self.ctx.seed), "deterministic": True, "force_row_wise": True}
         p.update(over)
         return p
 
@@ -83,7 +87,7 @@ class LGBMForecaster(BaseForecaster):
             if len(yt) < 500:
                 self.models[(lo, hi)] = None
                 continue
-            ds_kw = dict(categorical_feature=self.cat_idx, free_raw_data=False)
+            ds_kw = {"categorical_feature": self.cat_idx, "free_raw_data": False}
             nround = int(self.pp("n_estimators"))
             obj = self.pp("objective")
             extra = {"tweedie_variance_power": self.pp("tweedie_variance_power")} if obj == "tweedie" else {}
@@ -138,7 +142,7 @@ class LGBMForecaster(BaseForecaster):
 
     def feature_importance(self, top=15):
         rows = {}
-        for (lo, hi), mm in self.models.items():
+        for mm in self.models.values():
             if mm is None:
                 continue
             imp = mm[0].feature_importance("gain")

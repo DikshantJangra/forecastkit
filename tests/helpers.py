@@ -1,7 +1,7 @@
 """A user-defined model living OUTSIDE the library, referenced from config by import path."""
 import numpy as np
 
-from forecastkit import BaseForecaster, QuantileForecast
+from forecastkit import BaseForecaster
 
 
 class ConstModel(BaseForecaster):

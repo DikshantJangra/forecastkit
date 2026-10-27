@@ -9,7 +9,6 @@ Leakage guards (all tested in tests/):
 from __future__ import annotations
 
 import numpy as np
-import pandas as pd
 
 from forecastkit.masks import leading_zero_mask, stockout_mask
 from forecastkit.schema import Dataset, ForecastContext

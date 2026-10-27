@@ -8,6 +8,6 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 __version__ = "0.1.0"
 
-from .schema import Dataset, ForecastContext, QuantileForecast  # noqa: E402,F401
-from .models.base import BaseForecaster  # noqa: E402,F401
-from .utils import register_model, register_dataset  # noqa: E402,F401
+from .models.base import BaseForecaster  # noqa: F401
+from .schema import Dataset, ForecastContext, QuantileForecast  # noqa: F401
+from .utils import register_dataset, register_model  # noqa: F401

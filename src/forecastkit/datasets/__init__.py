@@ -8,6 +8,7 @@ from pathlib import Path
 
 from forecastkit.schema import Dataset
 from forecastkit.utils import get_dataset_fn, log
+
 from . import csv_adapter as _csv  # noqa: F401
 from . import m5 as _m5  # noqa: F401
 from .synthetic import make_sample_csv, make_synthetic_m5  # noqa: F401

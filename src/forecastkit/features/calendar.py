@@ -9,18 +9,18 @@ ALL_CAL = ("dow", "dow_onehot", "dom", "month", "month_cyc", "is_weekend")
 
 def calendar_features(dates: pd.DatetimeIndex, which=ALL_CAL):
     cols, names = [], []
-    dow = dates.dayofweek.values
+    dow = np.asarray(dates.day_of_week, dtype=np.int64)
     if "dow" in which:
         cols.append(dow.astype(np.float32)); names.append("dow")
     if "dow_onehot" in which:
         for d in range(7):
             cols.append((dow == d).astype(np.float32)); names.append(f"dow_{d}")
     if "dom" in which:
-        cols.append(dates.day.values.astype(np.float32)); names.append("dom")
+        cols.append(np.asarray(dates.day, dtype=np.float32)); names.append("dom")
     if "month" in which:
-        cols.append(dates.month.values.astype(np.float32)); names.append("month")
+        cols.append(np.asarray(dates.month, dtype=np.float32)); names.append("month")
     if "month_cyc" in which:
-        ang = 2 * np.pi * (dates.month.values - 1) / 12
+        ang = 2 * np.pi * (np.asarray(dates.month, dtype=np.float32) - 1.0) / 12.0
         cols += [np.sin(ang).astype(np.float32), np.cos(ang).astype(np.float32)]
         names += ["month_sin", "month_cos"]
     if "is_weekend" in which:

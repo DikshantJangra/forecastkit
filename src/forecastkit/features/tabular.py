@@ -17,7 +17,7 @@ def causal_roll(Y: np.ndarray, windows) -> dict:
     cc = np.cumsum(obs, 1)
     cs2 = np.cumsum(V * V, 1)
     cnz = np.cumsum((V > 0) & obs, 1)
-    pad = lambda a: np.concatenate([np.zeros((a.shape[0], 1)), a], 1)  # noqa: E731
+    pad = lambda a: np.concatenate([np.zeros((a.shape[0], 1)), a], 1)
     cs, cc, cs2, cnz = pad(cs), pad(cc), pad(cs2), pad(cnz)
     T = Y.shape[1]
     t = np.arange(1, T + 1)
@@ -38,7 +38,7 @@ def causal_roll(Y: np.ndarray, windows) -> dict:
 
 def recency_features(Y: np.ndarray) -> dict:
     """days since last sale, age (days since first observation), expanding mean."""
-    N, T = Y.shape
+    _N, T = Y.shape
     obs = ~np.isnan(Y)
     pos = obs & (Y > 0)
     idx = np.arange(T)[None, :]

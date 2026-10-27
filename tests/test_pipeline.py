@@ -1,4 +1,3 @@
-import copy
 
 import numpy as np
 import pandas as pd
@@ -64,7 +63,7 @@ def test_forecast_file_schema_and_evaluator_roundtrip(cfg_copy, tmp_path):
 def test_perfect_forecast_scores_zero(cfg_copy, tmp_path):
     cfg = cfg_copy
     run_dir = tmp_path / "run"
-    fc = run_backtest(cfg, out_dir=run_dir, only=["snaive"])
+    run_backtest(cfg, out_dir=run_dir, only=["snaive"])
     ev = Evaluator(cfg, run_dir)
     # overwrite the forecast with the truth in every quantile
     ev.Q["snaive"] = np.repeat(ev.Y[..., None], len(ev.qs), -1)
@@ -100,6 +99,7 @@ def test_generic_csv_adapter_fills_gaps_and_marks_availability(tmp_path):
 
 def test_cli_end_to_end(cfg_copy, tmp_path):
     import yaml
+
     from forecastkit.cli import main
     cfg = cfg_copy
     cfg["output_dir"] = str(tmp_path / "out")

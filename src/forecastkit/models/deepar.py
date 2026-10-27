@@ -14,17 +14,18 @@ from __future__ import annotations
 
 import math
 import time
+from typing import Any, ClassVar
 
 import numpy as np
 
-from forecastkit.schema import QuantileForecast
 from forecastkit.utils import log, register_model
+
 from .base import BaseForecaster
 
 try:
     import torch
-    import torch.nn as nn
     import torch.nn.functional as F
+    from torch import nn
 except ImportError as e:  # pragma: no cover
     raise ImportError("torch is required for the deepar model: pip install torch") from e
 
@@ -91,11 +92,13 @@ class _Net(nn.Module):
 
 @register_model("deepar")
 class DeepARForecaster(BaseForecaster):
-    DEFAULTS = dict(likelihood="negbin", context_length=56, hidden=40, layers=2, dropout=0.1, steps=600,
-                    finetune_steps=250, batch_size=128, lr=1e-3, weight_decay=1e-5, num_samples=100,
-                    use_item_id=True, item_dropout=0.15, emb_dim=8, use_mask=True, warm_start=True,
-                    refit_every=1, train_span=730, include_covariates=None, exclude_covariates=None,
-                    num_threads=2, infer_chunk=128, clip=10.0, device="auto")
+    DEFAULTS: ClassVar[dict[str, Any]] = {
+        "likelihood": "negbin", "context_length": 56, "hidden": 40, "layers": 2, "dropout": 0.1, "steps": 600,
+        "finetune_steps": 250, "batch_size": 128, "lr": 1e-3, "weight_decay": 1e-5, "num_samples": 100,
+        "use_item_id": True, "item_dropout": 0.15, "emb_dim": 8, "use_mask": True, "warm_start": True,
+        "refit_every": 1, "train_span": 730, "include_covariates": None, "exclude_covariates": None,
+        "num_threads": 1, "infer_chunk": 128, "clip": 10.0, "device": "auto",
+    }
 
     def pp(self, k):
         return self.params.get(k, self.DEFAULTS[k])
@@ -125,21 +128,24 @@ class DeepARForecaster(BaseForecaster):
         return torch.device(want)
 
     def _prepare(self, ctx):
-        torch.set_num_threads(int(self.pp("num_threads")))
+        try:
+            torch.set_num_threads(int(self.pp("num_threads")))
+        except (RuntimeError, ValueError):
+            pass
         self.dev = self._device()
         cov = ctx.covariate_idx(self.pp("include_covariates"), self.pp("exclude_covariates"))
         self.cov_idx = cov
-        Kh = ctx.known_hist[:, :, cov].astype(np.float32)
-        Kf = ctx.known_fut[:, :, cov].astype(np.float32)
+        Kh = np.ascontiguousarray(ctx.known_hist[:, :, cov], dtype=np.float32)
+        Kf = np.ascontiguousarray(ctx.known_fut[:, :, cov], dtype=np.float32)
         if not hasattr(self, "cov_mu"):  # frozen at first fit (data <= first origin) -> warm starts stay consistent
             flat = Kh.reshape(-1, Kh.shape[2])
             self.cov_mu = flat.mean(0)
             self.cov_sd = flat.std(0) + 1e-6
-        self.Kh = torch.from_numpy((Kh - self.cov_mu) / self.cov_sd).to(self.dev)
-        self.Kf = torch.from_numpy((Kf - self.cov_mu) / self.cov_sd).to(self.dev)
-        y = ctx.target(self.pp("use_mask")).astype(np.float32)
-        self.Y = torch.from_numpy(y).to(self.dev)
-        self.cats = torch.from_numpy(self._vocab(ctx)).to(self.dev)
+        self.Kh = torch.tensor((Kh - self.cov_mu) / self.cov_sd, dtype=torch.float32, device=self.dev)
+        self.Kf = torch.tensor((Kf - self.cov_mu) / self.cov_sd, dtype=torch.float32, device=self.dev)
+        y = np.ascontiguousarray(ctx.target(self.pp("use_mask")), dtype=np.float32)
+        self.Y = torch.tensor(y, dtype=torch.float32, device=self.dev)
+        self.cats = torch.tensor(self._vocab(ctx), dtype=torch.long, device=self.dev)
 
     def _build(self, ctx):
         cards = [len(self.vocab[c]) + 1 for c in self.cat_cols]
@@ -160,7 +166,8 @@ class DeepARForecaster(BaseForecaster):
             s = torch.randint(lo, hi + 1, (n,), generator=g)
             i, s = i.to(self.dev), s.to(self.dev)
             pos = s[:, None] + torch.arange(L, device=self.dev)[None, :]
-            tgt = self.Y[i[:, None], pos]
+            i_exp = i[:, None].expand_as(pos)
+            tgt = self.Y[i_exp, pos]
             ok = (~torch.isnan(tgt[:, ctx_len:])).sum(1) >= 1
             if ok.sum() == 0:
                 continue
@@ -185,8 +192,9 @@ class DeepARForecaster(BaseForecaster):
             if b is None:
                 break
             i, pos, tgt = b
-            lag = Ypad[i[:, None], pos]
-            cov = self.Kh[i[:, None], pos]
+            i_exp = i[:, None].expand_as(pos)
+            lag = Ypad[i_exp, pos]
+            cov = self.Kh[i_exp, pos]
             cats = self.cats[i].clone()
             if self.item_slot is not None and self.pp("item_dropout") > 0:
                 drop = (torch.rand(len(i), generator=g) < float(self.pp("item_dropout"))).to(self.dev)

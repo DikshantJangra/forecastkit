@@ -21,6 +21,29 @@ make smoke                         # ~3 min, synthetic data in EXACT M5 file for
 make demo-csv                      # same toolkit on a non-M5 CSV (bakery sales): only the adapter block changes
 ```
 
+### 🌐 Interactive Web Site & Live Playground
+
+```bash
+# Run the modern React + TypeScript web app (in frontend/):
+make site                          # starts frontend dev server at http://localhost:3000
+
+# Run the backend REST API:
+make api                           # starts FastAPI server at http://localhost:8000
+```
+
+### 📈 Streamlit Studio & Hugging Face Spaces
+
+```bash
+# Launch the full-featured Streamlit forecasting studio locally:
+make streamlit                     # starts Streamlit dashboard at http://localhost:8501
+
+# Deploy directly to Hugging Face Spaces (Streamlit SDK):
+./hf_spaces/deploy.sh <your-username>/<your-space-name>
+# Or push root directly to your HF space remote:
+git push https://huggingface.co/spaces/YOUR_USERNAME/forecastkit main
+```
+
+
 Real M5 run (see [docs/RUN_REAL_M5.md](docs/RUN_REAL_M5.md)):
 
 ```bash

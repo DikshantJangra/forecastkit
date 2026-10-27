@@ -26,7 +26,7 @@ def make_synthetic_m5(out_dir, n_items: int = 40, n_days: int = 800, stores=("CA
     dates = pd.date_range(start, periods=n_days, freq="D")
     d_cols = [f"d_{i + 1}" for i in range(n_days)]
     wk = 11101 + (np.arange(n_days) // 7)
-    dow = dates.dayofweek.values
+    dow = dates.day_of_week.values
 
     # ---- calendar ---------------------------------------------------------
     ev_days = rng.choice(np.arange(n_days), size=max(6, n_days // 30), replace=False)
@@ -120,7 +120,7 @@ def make_sample_csv(path, n_skus: int = 24, n_days: int = 420, seed: int = 1) ->
         wprof = np.clip(rng.normal(1, .3, 7), .4, None)
         promo = (rng.random(n_days) < .05).astype(int)
         price = np.round(rng.uniform(1, 6) * (1 - .2 * promo), 2)
-        mu = lam * wprof[dates.dayofweek] * (1 + .5 * promo) * (1 + .15 * np.sin(2 * np.pi * np.arange(n_days) / 365))
+        mu = lam * wprof[dates.day_of_week] * (1 + .5 * promo) * (1 + .15 * np.sin(2 * np.pi * np.arange(n_days) / 365))
         units = rng.poisson(mu)
         if k % 7 == 0:  # a stockout episode, recorded as zero sales
             units[200:230] = 0

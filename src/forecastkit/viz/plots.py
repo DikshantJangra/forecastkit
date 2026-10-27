@@ -7,9 +7,8 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
+import matplotlib.pyplot as plt
+import numpy as np
 
 PALETTE = ["#4C78A8", "#F58518", "#54A24B", "#E45756", "#72B7B2", "#B279A2", "#9D755D", "#BAB0AC", "#EECA3B"]
 plt.rcParams.update({"figure.dpi": 130, "axes.spines.top": False, "axes.spines.right": False, "font.size": 9,
@@ -84,9 +83,9 @@ def origin_stability(ev, path, metric="WAPE"):
     fig, ax = plt.subplots(figsize=(5.4, 3.6))
     data = [po[po.model == m][metric].to_numpy() for m in ev.models]
     try:
-        ax.boxplot(data, tick_labels=ev.models, patch_artist=True, boxprops=dict(alpha=.35))
+        ax.boxplot(data, tick_labels=ev.models, patch_artist=True, boxprops={"alpha": .35})
     except TypeError:  # matplotlib < 3.9
-        ax.boxplot(data, labels=ev.models, patch_artist=True, boxprops=dict(alpha=.35))
+        ax.boxplot(data, labels=ev.models, patch_artist=True, boxprops={"alpha": .35})
     for i, m in enumerate(ev.models):
         ax.scatter(np.full(len(data[i]), i + 1), data[i], color=col[m], zorder=3, s=18)
     ax.set_ylabel(metric); ax.set_title(f"{metric} across rolling origins")
@@ -144,7 +143,7 @@ def cold_start_bar(ev, path, metric="WAPE"):
 def pick_series(ev) -> dict:
     """Pick representative series automatically: smooth, intermittent, lumpy, cold-start, stockout, event."""
     ds, picks = ev.ds, {}
-    st, ids = ds.static, ds.series_ids
+    st, _ids = ds.static, ds.series_ids
     vol = np.nan_to_num(ev.info["mean_demand"].to_numpy())
     est = ~ev.cold
     for cls in ("smooth", "intermittent", "lumpy", "erratic"):
@@ -180,7 +179,7 @@ def fan_charts(ev, path, models=None, origin_i=-1, history=84):
     ds = ev.ds
     oi = ev.oi[origin_i]
     qs = np.array(ev.qs)
-    j = lambda q: int(np.argmin(np.abs(qs - q)))  # noqa: E731
+    j = lambda q: int(np.argmin(np.abs(qs - q)))
     fig, axs = plt.subplots(len(picks), len(models), figsize=(3.3 * len(models), 1.9 * len(picks)), sharex="row",
                             squeeze=False)
     col = colors(ev.models)
@@ -219,7 +218,8 @@ def kalman_state(run_dir, path, model="kalman"):
     p = Path(run_dir) / f"diag_{model}.pkl"
     if not p.exists():
         return None
-    d = pickle.load(open(p, "rb"))
+    with open(p, "rb") as f:
+        d = pickle.load(f)
     fig, axs = plt.subplots(len(d), 2, figsize=(9, 2.3 * len(d)), squeeze=False)
     for r, (sid, g) in enumerate(d.items()):
         ax = axs[r, 0]

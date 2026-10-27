@@ -21,6 +21,7 @@ import yaml
 from forecastkit.config import load_config, set_by_path
 from forecastkit.evaluation.evaluator import Evaluator
 from forecastkit.utils import log
+
 from .runner import run_backtest
 
 
@@ -43,7 +44,7 @@ def run_ablation(spec_path, extra_overrides=None) -> pd.DataFrame:
         cfg["run_name"] = f"{name}/{vname}"
         run_dir = out_root / vname
         log.info("=== ablation variant: %s %s", vname, over)
-        fc = run_backtest(cfg, out_dir=run_dir)
+        run_backtest(cfg, out_dir=run_dir)
         ev = Evaluator(cfg, run_dir)
         mt, cs = ev.main_table(), ev.cold_start()
         nc = ev.main_table("non_censored")[["MAE", "WAPE", "pinball"]].add_suffix("_noncens")  # stockout-fair view
