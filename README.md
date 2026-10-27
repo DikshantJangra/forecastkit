@@ -83,6 +83,48 @@ then `models: {mine: {type: my_model, params: {...}}}` — or `type: "my_pkg.mod
 * Metric definitions are unit-tested on toy data (aggregated WAPE ≠ mean of ratios; pinball asymmetry; perfect forecast ⇒ 0).
 * Evaluation ground-truth stockout labels are hindsight labels used **only for scoring**, and are frozen across ablation variants.
 
+![Rolling-Origin Backtest Protocol](docs/rolling_origin.png)
+
+## Evaluation Figures & Diagnostic Reports
+
+Every backtest run (`forecastkit all`, `make smoke`, or `forecastkit report`) automatically produces an extensive suite of 9 diagnostic figures:
+
+### 1. Probabilistic Forecast Fan Charts
+![Probabilistic Forecast Fan Charts](reports/example_synthetic_run/figures/fan_charts.png)
+*Multi-quantile fan charts ($p_{10}, p_{25}, p_{50}, p_{75}, p_{90}$) and point mean forecasts against actual observations across sample series and horizons.*
+
+### 2. Error vs. Forecast Horizon
+![Error vs Horizon](reports/example_synthetic_run/figures/error_vs_horizon.png)
+*Tracking WAPE and pinball loss across forecast horizons $h = 1 \dots 28$ to diagnose short-term vs. long-term degradation.*
+
+### 3. Quantile Calibration & Reliability
+![Quantile Calibration](reports/example_synthetic_run/figures/calibration.png)
+*Empirical coverage vs. nominal quantile probabilities (reliability diagrams) with count-data discrete bounds.*
+
+### 4. Pinball Loss by Quantile
+![Pinball Loss by Quantile](reports/example_synthetic_run/figures/pinball_by_quantile.png)
+*Asymmetric pinball loss evaluated across the full quantile set ($q \in \{0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95\}$).*
+
+### 5. Stability Across Rolling Origins
+![Origin Stability](reports/example_synthetic_run/figures/origin_stability.png)
+*Mean $\pm$ standard deviation dispersion of MAE, WAPE, and pinball across rolling test folds.*
+
+### 6. Demand Classification Slice Heatmap
+![Demand Slice Heatmap](reports/example_synthetic_run/figures/slice_heatmap.png)
+*Syntetos-Boylan demand categorization breakdown comparing model accuracy across intermittent, smooth, erratic, and lumpy series.*
+
+### 7. Simulated Cold Start Performance
+![Cold Start Performance](reports/example_synthetic_run/figures/cold_start.png)
+*Accuracy comparison on newly launched items with limited history and uninitialized item embeddings.*
+
+### 8. Kalman Filter Latent State Tracking
+![Kalman Filter Latent States](reports/example_synthetic_run/figures/kalman_state.png)
+*Internal state tracking showing local level and stochastic weekly seasonal dynamics with missing observation handling.*
+
+### 9. Runtime & Compute Profiling
+![Runtime Profile](reports/example_synthetic_run/figures/runtime.png)
+*Fit and predict latency per model family for transparent computational cost evaluation.*
+
 ## Honest limitations
 
 * M5 has **no inventory data**: the stockout flag is a *proxy*, not ground truth (rule + sensitivity runs are provided).
