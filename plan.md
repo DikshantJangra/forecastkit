@@ -7,9 +7,9 @@ Oct 27, 2026 · **@DJ**
 
 We compare three families of probabilistic demand forecasters on the M5 Walmart data under one leak-proof rolling-origin protocol: a per-SKU Kalman filter, a LightGBM lag-feature model, and a global DeepAR network. All are scored on MAE, RMSE, WAPE and pinball loss at the same 28-day horizon, with stockouts treated as censored observations, simulated cold start, and calibrated uncertainty intervals.
 
-The work is delivered as  **forecastkit** , an open toolkit in which any dataset (via an adapter) and any model (via one `fit`/`predict` interface) can be evaluated by the same pipeline. Headline finding:  **[M5 RESULT: best model by WAPE and pinball, with margin and significance]** .
+The work is delivered as  **forecastkit** , an open toolkit in which any dataset (via an adapter) and any model (via one `fit`/`predict` interface) can be evaluated by the same pipeline. Headline finding (real M5 run, 1,200 series, 4 origins): **DeepAR has the lowest all-days WAPE (0.697 vs 0.772 for the 4-week seasonal naive). On pinball the top three (DeepAR 0.2619, Kalman→LightGBM 0.2620, ensemble 0.2623) are tied within origin-to-origin noise. Every learned model beats the reference under a paired bootstrap over series (`significance_wape.csv`, `significance_pinball.csv`).** Details: `docs/ML_RESULTS_AND_ABLATIONS.md`.
 
-All numbers marked [M5 RESULT] are filled from `outputs/m5_main/report/RESULTS.md` after the real M5 run; none are typed by hand.
+All numbers below come from `outputs/m5_main/report/RESULTS.md` (real M5 run, 2026-10-29).
 
 ## Problem and data
 
@@ -71,20 +71,20 @@ All models write one long forecast file (model, series, origin, horizon, date, s
 | Cov80 / Cov90, width | share of actuals inside the central interval, and its mean width                    |
 | Calibration          | P(y < q) and P(y ≤ q) per level, shown as a band because counts have mass at zero  |
 
-Results are also cut by horizon, origin, demand class, volume tier, cold-start status and censored versus non-censored days. Differences against the reference model (4-week seasonal naive) use a paired bootstrap over series with 1,000 resamples. Hyper-parameters are tuned on the validation origin only. Cold start is simulated: for about 7% of series only the last 28 days are visible, and global models receive the unknown-item embedding.
+Results are also cut by horizon, origin, demand class, volume tier, cold-start status and censored versus non-censored days. Differences against the reference model (4-week seasonal naive) use a paired bootstrap over series with 1,000 resamples. Tuning code searches the validation origin only; it has not been run yet, so the reported models use the defaults in `configs/m5.yaml`. Cold start is simulated: for about 7% of series only the last 28 days are visible, and global models receive the unknown-item embedding.
 
 ## Results
 
-The real M5 run has not been executed yet; every cell below is a placeholder to copy from `outputs/m5_main/report/RESULTS.md` (main table, all days). Lower is better except coverage.
+Main table, established series, all days, averaged over 4 origins (`outputs/m5_main/report/main_all_days.csv`, `runtime.csv`). Lower is better except coverage (target 0.90).
 
 | Model                     | MAE         | RMSE        | WAPE        | Pinball     | Cov90       | Width90     | Fit+predict time |
 | ------------------------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ---------------- |
-| Seasonal naive (4-wk)     | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT]      |
-| Kalman (per SKU)          | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT]      |
-| LightGBM                  | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT]      |
-| Kalman→LightGBM          | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT]      |
-| DeepAR                    | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT]      |
-| Ensemble (global + local) | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT] | [M5 RESULT]      |
+| Seasonal naive (4-wk) | 0.988 | 1.901 | 0.772 | 0.290 | 0.914 | 3.596 | 0.2 s |
+| Kalman (per SKU) | 0.924 | 1.917 | 0.723 | 0.274 | 0.914 | 4.016 | 13.7 s |
+| LightGBM | 0.907 | 1.799 | 0.709 | 0.264 | 0.941 | 3.759 | 397 s |
+| Kalman→LightGBM | 0.900 | 1.798 | 0.704 | 0.262 | 0.940 | 3.697 | 441 s |
+| DeepAR | 0.891 | 1.790 | 0.697 | 0.262 | 0.965 | 3.664 | 296 s |
+| Ensemble (global + local) | 0.899 | 1.782 | 0.703 | 0.262 | 0.919 | 3.813 | n/a (post-hoc) |
 
 Figures to insert from `report/figures/`, each with a one-line takeaway: fan charts (smooth, intermittent, cold-start series), error versus horizon, calibration band, pinball by quantile, stability across origins, slice heatmap, cold-start comparison, runtime, Kalman state diagnostics.
 
@@ -101,7 +101,12 @@ Each ablation is one YAML file run with `forecastkit ablate`; tables report all-
 | Kalman   | sqrt vs raw scale, shared vs per-series noise, window length, masking                                                | Which design choices matter for the local filter?                    |
 | LightGBM | Poisson vs Tweedie vs L2, price features, bucket size, item id                                                       | How much of the tabular result is feature engineering?               |
 
-[M5 RESULT: one sentence per ablation naming the winner and the size of the effect.]
+Completed so far (`outputs/ablation_kalman/`, `outputs/ablation_deepar_quick/`, summarised in `docs/ML_RESULTS_AND_ABLATIONS.md`):
+
+* Kalman: one shared noise ratio beats the per-series grid (pinball 0.269 vs 0.274); the sqrt transform beats no transform (WAPE 0.723 vs 0.786); log1p has a broken mean back-transform (RMSE 20.6).
+* Masking: removing it improves the all-days score but worsens non-censored days (Kalman pinball 0.291 vs 0.282, DeepAR 0.276 vs 0.272).
+* DeepAR likelihood: negative binomial beats Gaussian (WAPE 0.697 vs 0.792, pinball 0.262 vs 0.278).
+* Not run yet: the stockout 14-day rule, the LightGBM ablation, and DeepAR no_item_id, no_price_covariates and context-length variants.
 
 ## Limitations and threats to validity
 
@@ -111,7 +116,7 @@ Each ablation is one YAML file run with `forecastkit ablate`; tables report all-
 * The Kalman model is Gaussian on a transformed scale and is a poor likelihood for very intermittent series.
 * Count calibration is evaluated with strict and inclusive bounds; interval coverage uses inclusive bounds, which is generous when zeros are common.
 * DeepAR is a compact in-repo implementation, not GluonTS; the CPU path is tested and the GPU path is untested here.
-* Each DeepAR number is from [M5 RESULT: number of seeds] seed(s); report the spread.
+* Each DeepAR number is from a single seed (42); seed-to-seed spread has not been measured.
 
 ## Reproducibility and references
 

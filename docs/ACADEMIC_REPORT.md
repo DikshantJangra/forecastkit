@@ -8,9 +8,11 @@
 
 ---
 
+> **Status note (2026-10-29):** the abstract has been updated to the real M5 run. Sections 5 and 6 below still contain numbers from the **synthetic** smoke run (`reports/example_synthetic_run/`) and must not be quoted. Verified real-M5 numbers are in `docs/ML_RESULTS_AND_ABLATIONS.md`; Phase 1 evidence is indexed in `docs/PHASE1_EVIDENCE_INDEX.md`.
+
 ### Abstract
 
-Retail inventory replenishment presents an asymmetrical decision landscape where traditional mean-squared error point forecasts fail: overstocking triggers holding costs and obsolescence, whereas understocking incurs permanent lost sales and customer attrition. Achieving a target cycle-service level (e.g., 90%) demands trustworthy estimation of extreme conditional quantiles of cumulative lead-time demand under intermittent, erratic, and zero-heavy conditions. In this research, we introduce **forecastkit**, a model-agnostic, leak-proof probabilistic forecasting framework engineered to fairly benchmark *local state-space models* (Kalman filters), *direct tabular models* (LightGBM), and *global autoregressive deep neural networks* (DeepAR). By enforcing a strict data contract and rolling-origin temporal splits that causally recompute availability and stockout proxy masks from history slices alone, the framework guarantees complete immunity against lookahead target leakage. We evaluate five model families across 12,320 target evaluations spanning 800 days of hierarchical retail sales with 23 future covariates. Our empirical findings show that a global-local quantile ensemble delivers superior probabilistic precision (WAPE 0.489, continuous pinball loss 0.515), with DeepAR leading deep architectures (WAPE 0.489, Cov90 0.942) and structural Kalman filtering providing an exceptional efficiency frontier—executing in 2.46 seconds (30× faster than GBDTs) while achieving 89.7% empirical 90% coverage. Furthermore, ablation experiments reveal that ignoring stockout censorship introduces an unrecorded 2.2% error penalty and distorts interval calibration. All software, data adapters, mathematical definitions, and 35 unit verification tests are released open-source for full reproducibility.
+Retail replenishment needs demand ranges, not single numbers: ordering too much costs holding and waste, ordering too little loses sales. We present **forecastkit**, a leak-safe probabilistic forecasting toolkit, and use it to compare a per-series Kalman filter, a direct LightGBM model, a Kalman→LightGBM hybrid and a global DeepAR network on 1,200 M5 series (3 Walmart stores, 1,000 days, 2013-08-27 to 2016-05-22). Models are scored over 4 rolling 28-day test origins (124,992 evaluated cells), with stockout-proxy days masked in training and 84 simulated cold-start series. DeepAR has the lowest WAPE (0.697 vs 0.772 for a 4-week seasonal naive); on pinball loss DeepAR (0.262), the hybrid (0.262) and a quantile-average ensemble (0.262) are tied within origin-to-origin noise. The hybrid is best on non-censored days (WAPE 0.660) and on simulated cold start (WAPE 0.760). The Kalman filter matches a 28-day moving average (WAPE 0.723) at about 29× less compute than LightGBM. DeepAR's 90% intervals over-cover (0.965). Ablations show that a negative binomial likelihood beats a Gaussian one for DeepAR (WAPE 0.697 vs 0.792) and that stockout masking improves accuracy on non-censored days. The stockout flag is a heuristic proxy because M5 has no inventory data.
 
 **Keywords:** Probabilistic Demand Forecasting, Kalman Filtering, DeepAR, LightGBM, M5 Competition, Stockout Censoring, Rolling-Origin Backtesting, Reproducibility.
 
@@ -125,6 +127,9 @@ Prediction interval performance is verified via empirical 80% and 90% coverage r
 ---
 
 ## 5. Empirical Results & Comparative Analysis
+
+> **Synthetic numbers below.** Tables and claims in Sections 5 and 6 come from the synthetic smoke run and are superseded by `docs/ML_RESULTS_AND_ABLATIONS.md`. Unsupported claims in Section 6 (for example "1.6% pinball reduction from the ensemble" and the "2.2% censoring penalty") are not reproduced on M5.
+
 
 ### 5.1 Overall Benchmark Performance
 
