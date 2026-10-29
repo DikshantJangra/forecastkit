@@ -65,3 +65,15 @@ hf-deploy:
 
 .PHONY: install test synth smoke subset baselines kalman lgbm deepar evaluate report m5 ablations demo-csv streamlit site build-site api hf-deploy
 
+
+# ---- Phase 1 deliverables (no model training) ----
+eda:
+	$(PY) scripts/eda_m5.py --config $(CFG) --fig-dir docs/figures/eda --out-dir outputs/eda
+
+paper:
+	cd paper && tectonic -X compile forecastkit_phase1.tex
+
+slides:
+	PYTHON=$(PY) sh slides/build.sh
+
+.PHONY: eda paper slides

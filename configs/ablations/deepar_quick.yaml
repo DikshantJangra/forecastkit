@@ -1,0 +1,10 @@
+# The DeepAR ablation that was actually run (2 of the 7 variants in deepar.yaml).
+# Results: outputs/ablation_deepar_quick/ablation_table.csv. About 11 min on CPU.
+#   forecastkit ablate configs/ablations/deepar_quick.yaml
+# This file is a verbatim copy of the temporary spec used for that run (/tmp/deepar_quick.yaml).
+base: configs/m5.yaml
+name: ablation_deepar_quick
+models: [deepar]
+variants:
+  no_loss_masking:     {models.deepar.params.use_mask: false}
+  gaussian_likelihood: {models.deepar.params.likelihood: gaussian}

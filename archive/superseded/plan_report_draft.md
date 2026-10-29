@@ -1,7 +1,7 @@
 
 # Inventory Demand Forecasting via Kalman Filtering and Global DeepAR Models — Project Report
 
-Oct 27, 2026 · **@DJ**
+Oct 27, 2026 · Anonymous submission
 
 ## Abstract
 
