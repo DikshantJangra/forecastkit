@@ -1,6 +1,6 @@
-# Running the REAL M5 experiment (the part that produces your report numbers)
+# Running the real M5 experiment
 
-The library is built and tested; the numbers in your report/slides must come from this run on the real data.
+**Status:** this run was completed on 2026-10-29 (outputs in `outputs/m5_main/`, git-ignored). The paper and slides use its numbers. This page explains how to reproduce it. Tuning (section 6) and multiple seeds (section 7) were **not** run. The completed ablations are listed in the root `README.md`.
 
 ## 0. Setup (once)
 
@@ -72,10 +72,9 @@ Hyper-parameters (optional, validation origin only): `forecastkit tune configs/m
 
 For the headline DeepAR result run ≥3 seeds: `forecastkit run configs/m5.yaml --models deepar --set seed=1 --set run_name=m5_seed1` (and 2, 3), then report mean ± std across seeds.
 
-## 8. Before you submit
+## 8. Pre-submission checklist (original planning notes)
 
 - [ ] `make test` green · `configs/subsets/m5_subset.csv` committed · exact `config.yaml` of the run kept
-- [ ] README results table replaced by your M5 numbers; `reports/example_synthetic_run/` clearly labelled synthetic (or deleted)
-- [ ] Report + slides regenerated from `RESULTS.md` · every figure caption states its takeaway
+- [x] README results replaced by M5 numbers; `reports/example_synthetic_run/` is labelled synthetic
+- [x] Paper and slides rebuilt from the result CSVs (`paper/`, `slides/`)
 - [ ] Limitations stated: stockout is a proxy · cold start simulated · one retailer · subset of series
-- [ ] Tag the release: `git tag v1.0 && git push --tags`
