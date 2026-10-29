@@ -1,21 +1,18 @@
-# Phase 1 slide deck
+# Slides
 
-Files:
-- `deck.html`: the slide source, 12 slides. It uses the old deck's design (light background, green accent, cards) and a fixed colour for each model.
-- `build_charts.py`: draws `figures/main_wape.svg`, `figures/main_pinball.svg` and `figures/by_setting.svg` directly from `outputs/m5_main/report/*.csv`. It also writes `figures/values.json` for checking.
-- `build.sh`: regenerates the charts, then prints the HTML to PDF with headless Chrome.
-- `forecastkit_phase1_slides.pdf`: the compiled deck.
+**Final presentation:** `final_presentation.pdf` (6 slides, 16:9, author metadata "Anonymous submission"). It was exported from slide software (PDF metadata: PptxGenJS, LibreOffice). Its editable source is not in this repository.
 
-The EDA figures are loaded from `../docs/figures/eda/`. They are not copied.
+## Earlier 12-slide HTML deck (superseded)
 
-## Build
+These files built the previous deck. They are kept because they are its source and because `build_charts.py` documents how the result charts were drawn from the CSVs.
+
+- `deck.html`: the 12-slide source.
+- `build_charts.py`: draws `figures/*.svg` from `outputs/m5_main/report/*.csv` and writes `figures/values.json`.
+- `build.sh`: regenerates the charts and prints the deck with headless Chrome to `archive/superseded/forecastkit_phase1_slides_html_v1.pdf`. It does not touch `final_presentation.pdf`.
 
 ```bash
-sh slides/build.sh
-# override the tools if needed:
+sh slides/build.sh        # or: make slides
 PYTHON=python3 CHROME="/path/to/chrome" sh slides/build.sh
 ```
 
-Requirements: Python with pandas and matplotlib, and Google Chrome (or Chromium) for printing to PDF. The `outputs/` CSVs must exist. Regenerate them with `forecastkit all configs/m5.yaml` if needed; they are git-ignored.
-
-To edit the slides, change `deck.html` and rebuild. Keep every number traceable to `paper/forecastkit_phase1.tex` or the CSVs.
+Requirements: Python with pandas and matplotlib, Google Chrome or Chromium, and the git-ignored `outputs/` CSVs.

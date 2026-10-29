@@ -110,3 +110,10 @@ No model, feature, config parameter, metric, split, seed, test, API or frontend 
 - `pytest`: 35 passed, before and after.
 - SHA-1 of the 83 evidence files (`outputs/`, `paper/`, `slides/`, `configs/subsets/`, `docs/figures/`) was compared before and after. Only rebuilt files changed: the rebuilt PDFs differed in creation date, and the SVGs in their embedded date. The PDF text was identical. The original paper and slides PDFs were restored, so their hashes match.
 - `make eda` (5.5 s), `make paper` (8 pages, no overfull boxes or undefined references) and `make slides` (12 pages) all ran.
+
+## Final presentation replaced (2026-10-29)
+
+- Added `slides/final_presentation.pdf`: the 6-slide deck supplied by the user (`Claude Research Presentation Slides.pdf`). The PDF was copied unchanged.
+- Moved the earlier 12-slide deck `slides/forecastkit_phase1_slides.pdf` to `archive/superseded/forecastkit_phase1_slides_html_v1.pdf` with `git mv`. `slides/build.sh` now writes there, so it can't overwrite the final deck.
+- Updated `README.md`, `slides/README.md`, `docs/SLIDES_OUTLINE.md`, `docs/DELIVERABLES.md`, `docs/PHASE1_EVIDENCE_INDEX.md` and `archive/superseded/README.md`.
+- Checks on the new deck: the author metadata is "Anonymous submission" and the text contains no names. A search found none of the old synthetic values. All results, EDA numbers and cell counts match the CSVs. The one rounding difference is −9.7% vs −9.8%, as noted in `docs/SLIDES_OUTLINE.md`.

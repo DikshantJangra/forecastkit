@@ -7,10 +7,10 @@
 | | File |
 |---|---|
 | Research paper (IEEE format, 8 pages) | [`paper/forecastkit_phase1.pdf`](paper/forecastkit_phase1.pdf) |
-| Presentation (12 slides, PDF) | [`slides/forecastkit_phase1_slides.pdf`](slides/forecastkit_phase1_slides.pdf) |
+| Presentation (6 slides, PDF) | [`slides/final_presentation.pdf`](slides/final_presentation.pdf) |
 | Evidence behind every number | [`docs/PHASE1_EVIDENCE_INDEX.md`](docs/PHASE1_EVIDENCE_INDEX.md) |
 
-The presentation is HTML printed to PDF. No editable PowerPoint version exists yet. Older PDFs with synthetic numbers are in [`archive/superseded/`](archive/superseded/README.md) and should not be graded.
+The final presentation was exported from slide software (PDF metadata: PptxGenJS, LibreOffice). Its editable source is not in the repository. Older PDFs with synthetic numbers are in [`archive/superseded/`](archive/superseded/README.md) and should not be graded.
 
 ## Models compared
 
@@ -44,7 +44,7 @@ Commands assume an activated environment with the package installed (step 1) and
 | 9 | Ablations | Change one design choice at a time; evaluation labels frozen across variants. | `src/forecastkit/backtest/ablation.py`, `configs/ablations/` | `forecastkit ablate configs/ablations/kalman.yaml`, `forecastkit ablate configs/ablations/deepar_quick.yaml` | `outputs/ablation_kalman/`, `outputs/ablation_deepar_quick/` | Partly done (see below) |
 | 10 | Tests | Leakage, metrics, splits, masks, model contract, CSV adapter, CLI end to end. | `tests/` | `make test` | 35 tests | Done |
 | 11 | Paper | Build the IEEE paper from LaTeX. | `paper/forecastkit_phase1.tex`, `paper/references.bib` | `make paper` (needs Tectonic) | `paper/forecastkit_phase1.pdf` | Done |
-| 12 | Presentation | Draw the result charts from the CSVs and print the HTML deck to PDF. | `slides/deck.html`, `slides/build_charts.py`, `slides/build.sh` | `make slides` (needs Chrome) | `slides/forecastkit_phase1_slides.pdf` | Done |
+| 12 | Presentation | Final 6-slide deck, added as a PDF. The earlier 12-slide HTML deck can still be rebuilt. | `slides/final_presentation.pdf`; earlier deck: `slides/deck.html`, `build_charts.py`, `build.sh` | none for the final deck; `make slides` rebuilds the earlier deck (needs Chrome) | `slides/final_presentation.pdf` | Done |
 
 `make eda`, `make paper` and `make slides` do not train models. Steps 7 to 9 retrain and take minutes to hours.
 
@@ -68,9 +68,9 @@ scripts/              eda_m5.py (step 4), make_diagrams.py (docs/architecture.pn
 tests/                regression tests (35)
 docs/                 method, EDA, feature, results and evidence documents (see below)
 paper/                LaTeX source, bibliography and compiled paper
-slides/               HTML deck source, chart script, build script and compiled slides
+slides/               final_presentation.pdf (current); earlier HTML deck source, chart and build scripts
 reports/example_synthetic_run/   synthetic demo outputs used by the Streamlit app and API
-archive/superseded/   old PDFs and the old report draft, kept for provenance
+archive/superseded/   old PDFs, the earlier 12-slide deck and the old report draft, kept for provenance
 app.py, frontend/, hf_spaces/    Streamlit studio, React site and Hugging Face deployment (demo only)
 ```
 
@@ -118,7 +118,7 @@ forecastkit all configs/m5.yaml                    # main benchmark, about 19 mi
 forecastkit ablate configs/ablations/kalman.yaml   # Kalman ablation (7 variants)
 forecastkit ablate configs/ablations/deepar_quick.yaml  # DeepAR ablation (2 variants), about 11 min
 make paper                                         # paper PDF (needs Tectonic)
-make slides                                        # slides PDF (needs Chrome and outputs/m5_main/report/)
+make slides                                        # earlier 12-slide HTML deck -> archive/ (needs Chrome and outputs/m5_main/report/)
 python3 paper/tex_to_md.py                         # regenerate docs/ACADEMIC_REPORT.md
 ```
 
@@ -170,7 +170,7 @@ Per-setting tables, bootstrap intervals and ablations are in [`docs/ML_RESULTS_A
 
 - `data/raw/`, `data/processed/` and `outputs/` are git-ignored. The result CSVs behind the paper and slides exist only on the machine that ran them. To rebuild them, run steps 7 to 9 with the M5 data.
 - Every run saves its exact configuration in `outputs/<run>/config.yaml`. Seeds are set in `configs/m5.yaml` (run seed 42, subset seed 42, cold-start seed 7).
-- External tools: Tectonic (or TeX Live) for the paper, and Google Chrome or Chromium for the slides.
+- External tools: Tectonic (or TeX Live) for the paper, and Google Chrome or Chromium for the earlier HTML deck.
 - `make slides` regenerates the charts from `outputs/m5_main/report/`, so it fails without those CSVs.
 
 ## Demo applications (not part of the evaluation)

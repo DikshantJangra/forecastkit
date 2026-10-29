@@ -17,7 +17,7 @@ DeepAR has the best WAPE. On pinball, DeepAR, the hybrid and the ensemble are ti
 The hybrid is best on non-censored days (0.660 / 0.269) and on simulated cold start (WAPE 0.760). DeepAR's Cov90 is 0.965 against a 0.90 target.
 
 ## Known integrity issues outside these docs
-- The old report and presentation PDFs still contain synthetic-run numbers and unsupported ablation percentages. They were moved, unmodified, to `archive/superseded/` (see its README). The current presentation is `slides/forecastkit_phase1_slides.pdf`.
+- The old report and presentation PDFs still contain synthetic-run numbers and unsupported ablation percentages. They were moved, unmodified, to `archive/superseded/` (see its README). The current presentation is `slides/final_presentation.pdf`.
 - The Phase 1 paper has been rewritten from the verified evidence: `paper/forecastkit_phase1.tex`, compiled to `paper/forecastkit_phase1.pdf`. `docs/ACADEMIC_REPORT.md` is now generated from that source and no longer contains synthetic numbers.
 - The old PDF report's reference list gives the wrong title and pages for the M5 paper (corrected in the new paper) ("Results, findings, and ways forward", pp. 1402-1423). Crossref records it as "M5 accuracy competition: Results, findings, and conclusions", IJF 38(4), 1346-1364, doi:10.1016/j.ijforecast.2021.11.013.
 - Anonymity: the `@DJ` signature, which was in `plan.md` (now `archive/superseded/plan_report_draft.md`), has been removed. The new paper has an anonymous author block and empty PDF author metadata. The git history still records the commit author.
