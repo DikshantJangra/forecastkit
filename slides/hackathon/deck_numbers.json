@@ -1,0 +1,36 @@
+{
+  "hybrid_WAPE": 0.6706528324251808,
+  "hybrid_WAPE_sd": 0.0002953544781454655,
+  "hybrid_pinball": 0.2533290742225635,
+  "hybrid_pinball_sd": 0.0003084489581307082,
+  "klgbm_WAPE": 0.7038674161463916,
+  "klgbm_pinball": 0.26197978643868275,
+  "hybrid_WAPE_nc": 0.6644224947394636,
+  "hybrid_pinball_nc": 0.27338600835929566,
+  "klgbm_WAPE_nc": 0.6598086230856826,
+  "klgbm_pinball_nc": 0.26927664292943043,
+  "rel_WAPE_pct": -4.71886934375477,
+  "rel_pinball_pct": -3.3020533124772076,
+  "nc_pinball_diff_ci": [
+    0.0014029297288539466,
+    0.006539228604670986
+  ],
+  "share_runs_7plus": 0.19153225806451613,
+  "gain_share_runs_7plus": 0.9212739924223567,
+  "cov80": 0.9305742234169654,
+  "cov90": 0.9638910223587643,
+  "zero_share": 0.5911,
+  "classes": {
+    "intermittent": 914,
+    "lumpy": 167,
+    "smooth": 89,
+    "erratic": 30
+  },
+  "snap_ratio": {
+    "CA": 1.0703,
+    "TX": 1.1067,
+    "WI": 1.0584
+  },
+  "n_all": 124992,
+  "n_nc": 114127
+}

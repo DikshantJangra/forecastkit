@@ -1,0 +1,180 @@
+<!doctype html><html><head><meta charset="utf-8"><title>ForecastKit · Hackathon</title><link rel="stylesheet" href="deck.css"></head><body><section class="slide "><header><div class="eyebrow">The problem + our innovation</div><div class="story"><span class="on">Problem</span><span class="">Data</span><span class="">Approach</span><span class="">Models</span><span class="">Evidence</span><span class="">Insight</span></div></header><h1>Zero sales does not always mean zero demand.</h1><div class="body">
+<div class="g3">
+  <div class="card">
+    <div class="tag">The problem</div>
+    <img src="fig/s1_patterns.png" class="fill">
+    <div class="caption">Same retail dataset. Completely different demand patterns.</div>
+  </div>
+  <div class="mid">
+    <div class="insight">Forecast demand patterns <em>differently.</em></div>
+    <p class="muted">A recorded zero can mean “nobody wanted it”, or “it was not on the shelf”.
+    One model struggles to learn both.</p>
+  </div>
+  <div class="card arch">
+    <div class="tag">Our hybrid</div>
+    <div class="node ink">Leak-safe history up to forecast day T</div>
+    <div class="fork"><span></span><span></span></div>
+    <div class="two">
+      <div class="node blue"><b>DeepAR</b><small>How much sells, if anything sells</small></div>
+      <div class="node orange"><b>Zero-run LightGBM</b><small>Chance that recorded sales are zero</small></div>
+    </div>
+    <div class="fork join"><span></span><span></span></div>
+    <div class="node teal"><b>Hurdle fusion</b><small>One valid probability distribution</small></div>
+    <div class="down">↓</div>
+    <div class="node green"><b>Probabilistic forecast</b><small>Expected sales · uncertainty · quantiles</small></div>
+    <div class="quote">First estimate whether sales will be zero. If sales happen, estimate how many.</div>
+  </div>
+</div>
+<div class="banner">Instead of forcing one model to learn everything, we combine two models with different jobs.</div></div><footer><span><b>ForecastKit</b> · Leak-safe probabilistic demand forecasting · M5 retail data</span><span>1 / 6</span></footer></section><section class="slide "><header><div class="eyebrow">Dataset quality & exploratory analysis</div><div class="story"><span class="">Problem</span><span class="on">Data</span><span class="">Approach</span><span class="">Models</span><span class="">Evidence</span><span class="">Insight</span></div></header><h1>Our dataset was dominated by difficult demand patterns.</h1><div class="body">
+<div class="g2-21">
+  <div class="card stat">
+    <div class="huge">59%</div>
+    <div class="statlab">of recorded daily sales were <b>zero</b></div>
+    <div class="facts">
+      <div><b>1,200</b><span>product-store series</span></div>
+      <div><b>3</b><span>stores (CA, TX, WI)</span></div>
+      <div><b>1,000</b><span>days of history</span></div>
+      <div><b>28</b><span>day forecast horizon</span></div>
+    </div>
+    <div class="muted small">A subset of the M5 Walmart dataset. Zero share counted after each product's first sale.</div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <div class="row-between"><div class="tag">Demand types (by sale frequency and size variation)</div>
+      <div class="pillbig">90% intermittent or lumpy</div></div>
+      <div class="stack"><div style="flex:914;background:#14A098"><b>914</b></div><div style="flex:167;background:#E8743B"><b>167</b></div><div style="flex:89;background:#2F6FDE"><b>89</b></div><div style="flex:30;background:#8B5CF6"><b>30</b></div></div>
+      <div class="legend"><div><i style="background:#14A098"></i><b>Intermittent</b> · 914 <span class="muted">— sells only now and then</span></div><div><i style="background:#E8743B"></i><b>Lumpy</b> · 167 <span class="muted">— occasional sales, sometimes large</span></div><div><i style="background:#2F6FDE"></i><b>Smooth</b> · 89 <span class="muted">— fairly steady demand</span></div><div><i style="background:#8B5CF6"></i><b>Erratic</b> · 30 <span class="muted">— steady timing, unpredictable size</span></div></div>
+    </div>
+    <div class="g3 tight">
+      <div class="card mini"><div class="k">Weekends</div><div class="v">1.17–1.32×</div>
+        <div class="muted small">Sat/Sun sales vs the category's daily average</div></div>
+      <div class="card mini"><div class="k">SNAP food-benefit days</div><div class="sb"><span>CA</span><div><i style="width:127px"></i></div><b>+7.0%</b></div><div class="sb"><span>TX</span><div><i style="width:192px"></i></div><b>+10.7%</b></div><div class="sb"><span>WI</span><div><i style="width:105px"></i></div><b>+5.8%</b></div>
+        <div class="muted small">vs non-SNAP days, same state</div></div>
+      <div class="card mini"><div class="k">Event days</div><div class="v">0.934×</div>
+        <div class="muted small">slightly lower than non-event days</div></div>
+    </div>
+    <div class="row-between">
+      <div class="muted small">⚑ Observed associations, not causal effects.</div>
+    </div>
+    <div class="warn"><b>⚠ Recorded zero ≠ confirmed zero demand.</b> M5 has no inventory data. We flag unusually long
+    zero runs (at least 28 days, and at least 3× the product's usual gap between sales) as <i>possibly censored</i>.
+    This proxy is a rule, not ground-truth stockout data.</div>
+  </div>
+</div></div><footer><span><b>ForecastKit</b> · Leak-safe probabilistic demand forecasting · M5 retail data</span><span>2 / 6</span></footer></section><section class="slide "><header><div class="eyebrow">Feature engineering & leakage control</div><div class="story"><span class="">Problem</span><span class="">Data</span><span class="on">Approach</span><span class="">Models</span><span class="">Evidence</span><span class="">Insight</span></div></header><h1>Every forecast uses only information available at that moment.</h1><div class="body">
+<div class="g2-12">
+  <div class="card">
+    <div class="row-between"><div class="tag">Rolling-origin evaluation</div>
+      <div class="legend inline"><div><i style="background:#E9ECEF"></i>known at origin T: used for training</div>
+      <div><i style="background:#2F6FDE"></i>next 28 days: hidden, used only for scoring</div></div></div>
+    <svg viewBox="0 0 1100 254" class="tlsvg"><text x="0" y="47" class="tl">Validation</text><text x="104" y="47" class="td">03 Jan</text><rect x="190" y="30" width="228" height="24" rx="5" fill="#E9ECEF"/><rect x="418" y="30" width="131" height="24" rx="5" fill="#8B95A1"/><line x1="418" x2="418" y1="26" y2="58" stroke="#1F2933" stroke-width="2"/><text x="0" y="87" class="tl">Test 1</text><text x="104" y="87" class="td">31 Jan</text><rect x="190" y="70" width="359" height="24" rx="5" fill="#E9ECEF"/><rect x="549" y="70" width="131" height="24" rx="5" fill="#2F6FDE"/><line x1="549" x2="549" y1="66" y2="98" stroke="#1F2933" stroke-width="2"/><text x="0" y="127" class="tl">Test 2</text><text x="104" y="127" class="td">28 Feb</text><rect x="190" y="110" width="490" height="24" rx="5" fill="#E9ECEF"/><rect x="680" y="110" width="131" height="24" rx="5" fill="#2F6FDE"/><line x1="680" x2="680" y1="106" y2="138" stroke="#1F2933" stroke-width="2"/><text x="0" y="167" class="tl">Test 3</text><text x="104" y="167" class="td">27 Mar</text><rect x="190" y="150" width="620" height="24" rx="5" fill="#E9ECEF"/><rect x="810" y="150" width="131" height="24" rx="5" fill="#2F6FDE"/><line x1="810" x2="810" y1="146" y2="178" stroke="#1F2933" stroke-width="2"/><text x="0" y="207" class="tl">Test 4</text><text x="104" y="207" class="td">24 Apr</text><rect x="190" y="190" width="751" height="24" rx="5" fill="#E9ECEF"/><rect x="941" y="190" width="131" height="24" rx="5" fill="#2F6FDE"/><line x1="941" x2="941" y1="186" y2="218" stroke="#1F2933" stroke-width="2"/><text x="265" y="246" class="td" text-anchor="middle">Dec 2015</text><text x="409" y="246" class="td" text-anchor="middle">Jan 2016</text><text x="554" y="246" class="td" text-anchor="middle">Feb 2016</text><text x="689" y="246" class="td" text-anchor="middle">Mar 2016</text><text x="834" y="246" class="td" text-anchor="middle">Apr 2016</text><text x="973" y="246" class="td" text-anchor="middle">May 2016</text><text x="190" y="18" class="td">◀ training history from Aug 2013</text></svg>
+    <div class="steps"><span>① Refit on data up to T</span><span>② Forecast the next 28 days</span>
+    <span>③ Score against hidden actuals</span><span>④ Move T forward 28 days, repeat</span></div>
+    <div class="muted small">The validation origin is used only to choose model settings. The four test origins are scored once.</div>
+  </div>
+  <div class="col">
+    <div class="banner slim">No future sales enter any forecast.</div>
+    <div class="card gate"><div class="tag">At forecast day T</div>
+      <div class="ok">✓ Allowed <span>past sales · past zero runs · product & store · the calendar, events, SNAP days and prices for the next 28 days</span></div>
+      <div class="no">✕ Hidden <span>actual sales after T. Revealed only to score the forecast.</span></div></div>
+    <div class="warn teal"><b>Zero-run proxy.</b> Unusually long zero stretches are found from past patterns
+    only. DeepAR does not learn from them as if they were true zero demand; they are <b>not deleted</b> and are
+    still scored. <b>Proxy ≠ confirmed stockout.</b></div>
+  </div>
+</div>
+<div class="g4">
+  <div class="card feat"><div class="ft" style="color:#2F6FDE">1 · Sales history</div>
+    <p>Recent sales · lags 1, 7, 14, 28 · rolling means · current zero-run length</p></div>
+  <div class="card feat"><div class="ft" style="color:#14A098">2 · Demand behaviour</div>
+    <p>Average gap between sales · non-zero rate · statistics of past zero runs</p></div>
+  <div class="card feat"><div class="ft" style="color:#E8743B">3 · Calendar & business</div>
+    <p>Day of week · month · events · SNAP days · price and price changes · forecast horizon</p></div>
+  <div class="card feat"><div class="ft" style="color:#3BA55C">4 · Product</div>
+    <p>Store, department and category identifiers · learned series embeddings <span class="muted">(product age was tested and not adopted)</span></p></div>
+</div></div><footer><span><b>ForecastKit</b> · Leak-safe probabilistic demand forecasting · M5 retail data</span><span>3 / 6</span></footer></section><section class="slide "><header><div class="eyebrow">Model application</div><div class="story"><span class="">Problem</span><span class="">Data</span><span class="">Approach</span><span class="on">Models</span><span class="">Evidence</span><span class="">Insight</span></div></header><h1>Two models. Two different jobs. One forecast.</h1><div class="body">
+<div class="g2-11">
+  <div class="col">
+    <div class="card model" style="border-top:5px solid #2F6FDE">
+      <div class="mt"><b>DeepAR</b> <span class="muted">deep learning · one network for all 1,200 series</span></div>
+      <p>Learns shared patterns across products and predicts a full probability distribution of sales.</p>
+      <div class="chips"><span>sales history</span><span>lags 7 / 14 / 28</span><span>product & store</span><span>calendar, SNAP, price</span></div>
+      <div class="out">Output: <b>possible sales values + their probabilities</b></div>
+    </div>
+    <div class="card model" style="border-top:5px solid #E8743B">
+      <div class="mt"><b>Zero-run persistence model</b> <span class="muted">LightGBM classifier</span></div>
+      <p>Asks one question: <b>will recorded sales be zero on this future day?</b></p>
+      <div class="chips"><span>current zero-run length</span><span>average gap between sales</span><span>recent non-zero rate</span>
+      <span>past zero-run statistics</span><span>calendar & price</span><span>forecast horizon</span></div>
+      <div class="out">Output: <b>probability of zero recorded sales, for each of the next 28 days</b></div>
+    </div>
+    <div class="chips grey"><b>Phase 2 training upgrades:</b><span>validation early stopping</span><span>best-checkpoint restore</span>
+    <span>3 random seeds</span><span>zero-probability scoring</span></div>
+  </div>
+  <div class="card fusion">
+    <div class="row-between"><div class="tag">Hurdle fusion</div><div class="illus">Illustrative example, not a real prediction</div></div>
+    <div class="fz">
+      <div><div class="fh" style="color:#E8743B">① Zero-run model</div>
+        <div class="bars"><div class="b"><em>60%</em><i style="height:110px;background:#E8743B"></i><span>zero</span></div><div class="b"><em>40%</em><i style="height:73px;background:#F3C3A8"></i><span>sales</span></div></div></div>
+      <div class="plus">+</div>
+      <div><div class="fh" style="color:#2F6FDE">② DeepAR: drop its zero, rescale the rest</div>
+        <div class="bars"><div class="b struck"><em>30%</em><i style="height:94px;background:#D5D9DE"></i><span>0</span></div><div class="b"><em>35%</em><i style="height:110px;background:#2F6FDE"></i><span>1</span></div><div class="b"><em>21%</em><i style="height:66px;background:#2F6FDE"></i><span>2</span></div><div class="b"><em>14%</em><i style="height:44px;background:#2F6FDE"></i><span>5</span></div></div></div>
+    </div>
+    <div class="down big">↓</div>
+    <div><div class="fh" style="color:#14A098">③ Final distribution: 60% zero, then 40% shared out as DeepAR says</div>
+      <div class="bars"><div class="b"><em>60%</em><i style="height:120px;background:#E8743B"></i><span>0</span></div><div class="b"><em>20%</em><i style="height:40px;background:#14A098"></i><span>1 unit</span></div><div class="b"><em>12%</em><i style="height:24px;background:#14A098"></i><span>2 units</span></div><div class="b"><em>8%</em><i style="height:16px;background:#14A098"></i><span>5 units</span></div></div></div>
+    <div class="formula">P(0) = π &nbsp;·&nbsp; P(y) = (1 − π) × DeepAR(y) / (1 − DeepAR(0)) for y ≥ 1
+      <span class="muted">— the probabilities add up to exactly 1</span></div>
+  </div>
+</div></div><footer><span><b>ForecastKit</b> · Leak-safe probabilistic demand forecasting · M5 retail data</span><span>4 / 6</span></footer></section><section class="slide s5"><header><div class="eyebrow">Evaluation, results & ablations</div><div class="story"><span class="">Problem</span><span class="">Data</span><span class="">Approach</span><span class="">Models</span><span class="on">Evidence</span><span class="">Insight</span></div></header><h1>The hybrid improved overall forecasting. The gains were not uniform.</h1><div class="body">
+<div class="evalbar"><span><b>1,200</b> series</span><span><b>4</b> rolling test origins</span><span><b>28</b>-day horizon</span>
+<span><b>124,992</b> scored forecasts, same cells for every model</span><span>Hybrid: 3 seeds (sd 0.0003) · Kalman-LightGBM: 1 run</span></div>
+<div class="g2-11 r5">
+  <div class="col">
+    <div class="g2 tight">
+      <div class="card metric"><div class="k">WAPE <span class="muted">(average error, lower = better)</span></div>
+        <div class="vs"><span>0.7039</span>→<b>0.6707</b></div><div class="gain">−4.7%</div></div>
+      <div class="card metric"><div class="k">Pinball loss <span class="muted">(quantile error)</span></div>
+        <div class="vs"><span>0.2620</span>→<b>0.2533</b></div><div class="gain">−3.3%</div></div>
+    </div>
+    <div class="muted small c">Phase 1 Kalman-LightGBM → Phase 2 hybrid. Better at 4 of 4 origins;
+    95% bootstrap intervals exclude zero.</div>
+    <div class="g2 tight">
+      <div class="card wl win"><div class="k">All days · 124,992 forecasts</div>
+        <div class="line"><span>Kalman-LightGBM</span><b>0.7039</b></div>
+        <div class="line best"><span>Phase 2 hybrid</span><b>0.6707</b></div>
+        <div class="who">Winner: Phase 2 hybrid</div></div>
+      <div class="card wl lose"><div class="k">Excluding proxy-flagged long zero runs · 114,127</div>
+        <div class="line best"><span>Kalman-LightGBM</span><b>0.6598</b></div>
+        <div class="line"><span>Phase 2 hybrid</span><b>0.6644</b></div>
+        <div class="who">Winner: Kalman-LightGBM <span class="muted">(pinball 0.2693 vs 0.2734)</span></div></div>
+    </div>
+    <div class="warn grey"><b>Uncertainty is still too wide.</b> The hybrid's 80% and 90% intervals contained the
+    actual value 93% and 96% of the time. Calibration is an open problem, not a win.</div>
+  </div>
+  <div class="col">
+    <div class="card chart"><div class="ct">Where the gain comes from: how long the product had sold zero at forecast day T</div>
+      <img src="fig/s5_buckets.png">
+      <div class="take">Zero runs of 7+ days are 19% of forecasts but give 92% of the gain.</div></div>
+    <div class="card chart"><div class="ct">Ablations: removing either component hurts (seed-42 runs)</div>
+      <img src="fig/s5_ablation.png">
+      <div class="take">Each gap to the full hybrid has a 95% bootstrap interval that excludes zero.</div></div>
+  </div>
+</div></div><footer><span><b>ForecastKit</b> · Leak-safe probabilistic demand forecasting · M5 retail data</span><span>5 / 6</span></footer></section><section class="slide last"><header><div class="eyebrow">Conclusion</div><div class="story"><span class="">Problem</span><span class="">Data</span><span class="">Approach</span><span class="">Models</span><span class="">Evidence</span><span class="on">Insight</span></div></header><h1>The best forecast depends on the demand pattern.</h1><div class="body">
+<div class="g3 tight">
+  <div class="card say" style="border-left:6px solid #2F6FDE"><div class="k">We built</div>
+    <p>A leak-safe pipeline that compares statistical, machine-learning and deep-learning forecasters on identical cells.</p></div>
+  <div class="card say" style="border-left:6px solid #14A098"><div class="k">We improved</div>
+    <p>The Phase 2 hybrid cut overall recorded-sales error vs Phase 1 Kalman-LightGBM: WAPE −4.7%, pinball −3.3%.</p></div>
+  <div class="card say" style="border-left:6px solid #E8743B"><div class="k">We discovered</div>
+    <p>The gain sits in persistent zero-sales runs. On more regular demand, Kalman-LightGBM stayed stronger.</p></div>
+</div>
+<div class="final">There is no single winner across every demand condition. Forecasting works better when the model
+understands the type of demand it is facing.</div>
+<div class="card fan"><div class="ct">Real Phase 2 hybrid forecasts from the last test origin (24 Apr 2016). Examples were picked from their sales history before looking at forecasts. The band changes shape with the demand pattern.
+ <span class="muted">The third product restarted selling right after T: a miss, and the reason we report results by condition.</span></div>
+  <img src="fig/s6_fans.png"></div>
+<div class="g2-21 tight end">
+  <div class="chips"><b>ForecastKit gives you:</b><span>leak-safe forecasting</span><span>probabilistic predictions</span>
+  <span>multiple model families</span><span>condition-based evaluation</span><span>transparent comparisons</span><span>reproducible experiments</span></div>
+  <div class="chips grey"><b>Next:</b><span>better uncertainty calibration</span><span>real inventory data</span><span>more ablations & datasets</span></div>
+</div>
+<div class="brand"><b>ForecastKit</b> <i>Understanding demand patterns. Forecasting with uncertainty.</i></div></div><footer><span><b>ForecastKit</b> · Leak-safe probabilistic demand forecasting · M5 retail data</span><span>6 / 6</span></footer></section></body></html>
