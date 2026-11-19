@@ -1,0 +1,37 @@
+# Phase 2 main configuration. Same data, masks, origins, horizon, quantiles and cold-start split as configs/m5.yaml.
+# Each model is run as its own process / run dir (parallel, no shared files):
+#   forecastkit run configs/phase2/m5_phase2.yaml --models <name> --set seed=<s> --set run_name=phase2/runs/<name>_s<s>
+# (scripts/phase2_run_all.sh runs everything; scripts/phase2_analysis.py builds the results package.)
+#
+# deepar_v2 was SELECTED ON THE VALIDATION ORIGIN (E02, configs/phase2/e02_deepar_select.yaml): seasonal lags
+# 7/14/28 + validation-based best checkpoint. Age feature and AdamW were within the 0.5% tie band -> not adopted.
+extends: ../m5.yaml
+run_name: phase2/main
+x-p1: &p1 {likelihood: negbin, context_length: 84, hidden: 64, layers: 2, steps: 2500, finetune_steps: 800,
+           num_samples: 200, use_item_id: true, device: auto}
+x-v2: &v2 {likelihood: negbin, context_length: 84, hidden: 64, layers: 2, steps: 2500, finetune_steps: 800,
+           num_samples: 200, use_item_id: true, device: auto,
+           validation: true, eval_every: 100, patience: 5, seasonal_lags: [7, 14, 28]}
+x-zm: &zm {num_threads: 2}
+models:
+  # ---- DL --------------------------------------------------------------------------------------------
+  deepar_p1:         {type: deepar, params: *p1}                                   # Phase 1 DeepAR (identical)
+  deepar_v2:         {type: deepar, params: *v2}                                   # Phase 2 DeepAR
+  deepar_v2_nomask:  {type: deepar, params: {<<: *v2, use_mask: false}}            # learns long zero runs as demand
+  # ---- ML + DL hybrid (primary) ----------------------------------------------------------------------
+  hybrid:            {type: deepar_hurdle, params: {deepar: *v2, zero_model: *zm, fusion: hurdle}}
+  # ---- hybrid ablations --------------------------------------------------------------------------------
+  hyb_zi_naive:      {type: deepar_hurdle, params: {deepar: *v2, zero_model: *zm, fusion: zi_naive}}
+  hyb_zi_inflate:    {type: deepar_hurdle, params: {deepar: *v2, zero_model: *zm, fusion: zi_inflate}}
+  hyb_gated:         {type: deepar_hurdle, params: {deepar: *v2, zero_model: *zm, fusion: gated}}
+  hyb_none:          {type: deepar_hurdle, params: {deepar: *v2, fusion: none}}   # DeepAR via the RB code path
+  hyb_no_persist:    {type: deepar_hurdle, params: {deepar: *v2, fusion: hurdle,
+                                                     zero_model: {num_threads: 2, persistence_features: false}}}
+  hyb_no_dl:         {type: deepar_hurdle, params: {zero_model: *zm, fusion: hurdle, positive_source: empirical}}
+  hyb_nomask:        {type: deepar_hurdle, params: {deepar: {<<: *v2, use_mask: false}, zero_model: *zm, fusion: hurdle}}
+  hyb_p1:            {type: deepar_hurdle, params: {deepar: *p1, zero_model: *zm, fusion: hurdle}}
+  # ---- DeepAR feature ablations around deepar_v2 (test, reported only; selection was done on validation) --
+  dar_v2_no_val:     {type: deepar, params: {<<: *v2, validation: false}}
+  dar_v2_age:        {type: deepar, params: {<<: *v2, age_feature: true}}
+  dar_v2_age_adamw:  {type: deepar, params: {<<: *v2, age_feature: true, optimizer: adamw, weight_decay: 0.01}}
+ensembles: {}

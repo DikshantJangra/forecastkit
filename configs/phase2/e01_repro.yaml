@@ -1,0 +1,9 @@
+# E01: Phase 1 DeepAR (identical params) re-run with the Phase 2 code -> must reproduce outputs/m5_main.
+#   forecastkit run configs/phase2/e01_repro.yaml
+extends: ../m5.yaml
+run_name: phase2/e01_repro_s42
+models:
+  deepar: {type: deepar, params: {likelihood: negbin, context_length: 84, hidden: 64, layers: 2,
+                                   steps: 2500, finetune_steps: 800, num_samples: 200,
+                                   use_item_id: true, device: auto}}
+ensembles: {}

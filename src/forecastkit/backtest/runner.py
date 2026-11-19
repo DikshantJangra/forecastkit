@@ -7,6 +7,7 @@ Output dir  outputs/<run_name>/:
     config.yaml        exact resolved config (reproducibility)
     forecasts.parquet  model, series_id, origin, h, ds, stat ('mean' | 'q0.5' ...), value
     timing.csv         fit / predict seconds per model x origin
+    artifacts/<model>/ optional per-origin model artifacts (models with an `export(dir, ctx)` method)
     series_info.csv    per-series static columns + intermittency class, volume tier, cold-start flag
 """
 from __future__ import annotations
@@ -97,6 +98,8 @@ def run_backtest(cfg: dict, out_dir=None, phase: str = "test", only=None, use_ca
             t2 = time.time()
             assert fc.quantiles.shape == (ds.N, H, len(qs)), f"{mname}: bad quantile shape {fc.quantiles.shape}"
             rows.append(_to_long(mname, ds.series_ids, ctx, fc, qs))
+            if save and hasattr(model, "export"):   # optional per-origin artifacts (samples, curves, weights)
+                model.export(out_dir / "artifacts" / mname, ctx)
             timing.append({"model": mname, "origin": ctx.origin, "fit_s": t1 - t0, "predict_s": t2 - t1})
             log.info("  %-14s origin %s  fit %.1fs  predict %.1fs", mname, ctx.origin.date(), t1 - t0, t2 - t1)
         if hasattr(model, "diagnostics") and save:

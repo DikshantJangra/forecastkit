@@ -182,8 +182,8 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### Quick Resources")
     st.markdown("• [GitHub Repository](https://github.com/forecastkit/forecastkit)")
-    st.markdown("• [Report & Architecture PDF](file:///Users/dikshantjangra/Documents/projects/forecastkit/ForecastKit_Academic_Report.pdf)")
-    st.markdown("• [M5 Walmart Specification](file:///Users/dikshantjangra/Documents/projects/forecastkit/docs/RUN_REAL_M5.md)")
+    st.markdown("• Report (IEEE PDF): `paper/forecastkit_phase2.pdf` in the repository")
+    st.markdown("• M5 run guide: `docs/RUN_REAL_M5.md` in the repository")
     st.caption("ForecastKit © 2026. MIT Licensed.")
 
 

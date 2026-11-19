@@ -1,0 +1,17 @@
+\begin{table}[t]
+\caption{DeepAR design selection on the \emph{validation} origin 2016-01-03 (E02). Rule fixed in advance: lowest non-censored pinball; gaps $<0.5\%$ go to the simpler model.}
+\label{tab:e02}
+\centering
+\footnotesize
+\resizebox{\columnwidth}{!}{\begin{tabular}{@{}lcccr@{}}
+\toprule
+Variant & WAPE & Pinball & Pinball$_{nc}$ & best step\\
+\midrule
+Phase 1 DeepAR & 0.7305 & 0.2552 & 0.2750 & --\\
++ validation checkpoint & 0.7290 & 0.2557 & 0.2768 & 2300\\
++ lags 7/14/28 (selected) & 0.7311 & 0.2550 & 0.2728 & 2100\\
++ age & 0.7324 & 0.2550 & 0.2722 & 2500\\
++ AdamW (wd 0.01) & 0.7330 & 0.2549 & 0.2721 & 2500\\
+\bottomrule
+\end{tabular}}
+\end{table}

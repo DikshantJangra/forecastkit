@@ -1,0 +1,20 @@
+# E02: DeepAR design selection on the VALIDATION origin (2016-01-03) only. Test origins are not touched.
+# Pre-declared selection rule: lowest mean pinball on warm, non-censored validation cells (DeepAR is the
+# latent-demand component); ties (< 0.5%) broken by the simpler model.
+#   for m in deepar_p1 deepar_es deepar_es_lags deepar_es_lags_age deepar_es_lags_age_adamw; do
+#     forecastkit run configs/phase2/e02_deepar_select.yaml --phase val --models $m --set run_name=phase2/e02_val/$m; done
+extends: ../m5.yaml
+run_name: phase2/e02_val
+x-p1: &p1 {likelihood: negbin, context_length: 84, hidden: 64, layers: 2, steps: 2500, finetune_steps: 800,
+           num_samples: 200, use_item_id: true, device: auto}
+models:
+  deepar_p1:                {type: deepar, params: *p1}
+  deepar_es:                {type: deepar, params: {<<: *p1, validation: true, eval_every: 100, patience: 5}}
+  deepar_es_lags:           {type: deepar, params: {<<: *p1, validation: true, eval_every: 100, patience: 5,
+                                                    seasonal_lags: [7, 14, 28]}}
+  deepar_es_lags_age:       {type: deepar, params: {<<: *p1, validation: true, eval_every: 100, patience: 5,
+                                                    seasonal_lags: [7, 14, 28], age_feature: true}}
+  deepar_es_lags_age_adamw: {type: deepar, params: {<<: *p1, validation: true, eval_every: 100, patience: 5,
+                                                    seasonal_lags: [7, 14, 28], age_feature: true,
+                                                    optimizer: adamw, weight_decay: 0.01}}
+ensembles: {}

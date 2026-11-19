@@ -1,0 +1,183 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>ForecastKit Phase 2</title><style>
+  @page { size: 1440px 810px; margin: 0; }
+  :root {
+    --bg: #f7f5f0; --card: #ffffff; --ink: #1f1d1a; --muted: #6b665c; --line: #e4dfd4;
+    --accent: #1a8a6a; --warn: #b4542d;
+    --snaive: #9aa0a6; --kalman: #4f8fbf; --lgbm: #7b6cc4; --hybrid: #1a8a6a; --deepar: #d9822b; --ens: #b5577a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--ink);
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slide { width: 1440px; height: 810px; padding: 48px 72px 78px; position: relative; overflow: hidden;
+    page-break-after: always; break-after: page; display: flex; flex-direction: column; }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  .eyebrow { font-size: 15px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 40px; line-height: 1.15; font-weight: 700; margin-top: 10px; letter-spacing: -.01em; }
+  h1.cover { font-size: 56px; margin-top: 18px; }
+  .sub { font-size: 23px; color: var(--muted); margin-top: 14px; line-height: 1.4; max-width: 1180px; }
+  .body { flex: 1; display: flex; gap: 28px; margin-top: 28px; min-height: 0; }
+  .col { flex: 1; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(40,35,20,.05); }
+  .card h3 { font-size: 21px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+  .card p, .card li { font-size: 19px; line-height: 1.42; color: #3a362f; }
+  .card ul { padding-left: 22px; } .card li { margin-bottom: 5px; }
+  .card.accent { border-left: 5px solid var(--accent); }
+  .card.warn { border-left: 5px solid var(--warn); }
+  .big { font-size: 46px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .biglabel { font-size: 17px; color: var(--muted); margin-top: 6px; line-height: 1.3; }
+  .stats { display: flex; gap: 18px; } .stats .card { flex: 1; padding: 16px 20px; }
+  figure { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px;
+    display: flex; flex-direction: column; min-height: 0; }
+  figure img { width: 100%; height: 100%; object-fit: contain; min-height: 0; }
+  figcaption { font-size: 15px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+  table { border-collapse: collapse; width: 100%; font-size: 19px; }
+  th { text-align: left; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 2px solid var(--line); padding: 8px 10px; }
+  td { padding: 7px 10px; border-bottom: 1px solid #efebe3; font-variant-numeric: tabular-nums; }
+  td.n, th.n { text-align: right; }
+  tr.hl td { background: #eef7f3; font-weight: 600; }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: 0; }
+  .footer { position: absolute; left: 72px; right: 72px; bottom: 22px; display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+  .pg { background: #e3f1ec; color: var(--accent); font-weight: 700; border-radius: 6px; padding: 3px 10px; }
+  .takeaway { font-size: 21px; font-weight: 600; color: var(--ink); background: #eef7f3; border-radius: 10px;
+    padding: 12px 20px; margin-top: 16px; }
+  .pill { display: inline-block; font-size: 15px; font-weight: 700; border-radius: 999px; padding: 3px 12px; margin-right: 6px; }
+  .done { background: #e3f1ec; color: var(--accent); } .notrun { background: #f6e6dd; color: var(--warn); }
+  .eq { font-style: italic; font-weight: 600; font-size: 21px; }
+  .refs li { font-size: 15.5px; line-height: 1.38; margin-bottom: 4px; }
+  .small { font-size: 16px !important; }
+
+  .math { font-family: "STIX Two Math", "Cambria Math", Georgia, serif; font-size: 22px; background: #fbfaf7;
+          border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; line-height: 1.6; }
+  .small td, .small th { font-size: 16px; padding: 5px 8px; }
+  .tiny { font-size: 15px; color: var(--muted); line-height: 1.35; }
+  .pos { color: #1a8a6a; font-weight: 700; } .neg { color: #b4542d; font-weight: 700; }
+  .pill { display:inline-block; padding: 2px 10px; border-radius: 99px; font-size: 14px; font-weight: 700;
+          background: #eef7f3; color: #1a8a6a; margin-right: 6px; }
+</style></head><body><section class="slide"><div class="eyebrow">Phase 2 · Deep Learning evaluation</div>
+<h1 class="cover">Masked DeepAR + a zero-run model:<br>an ML + DL hurdle for sparse retail demand</h1>
+<div class="sub">Phase 1 found a trade-off: DeepAR trained with long zero runs masked forecasts demand well, but misses the
+recorded zeros. Phase 2 asks whether a separate, calibrated zero model can supply those zeros without spoiling the
+demand model.</div>
+<div class="body"><div class="col"><div class="stats">
+<div class="card"><div class="big">0.2533</div><div class="biglabel">hybrid mean pinball, all days<br>(3 seeds, sd 0.0003)</div></div>
+<div class="card"><div class="big">0.2606</div><div class="biglabel">DeepAR v2 alone<br>(3 seeds)</div></div>
+<div class="card"><div class="big">0.2637</div><div class="biglabel">LightGBM (Phase 1)</div></div>
+<div class="card"><div class="big">7.9%</div><div class="biglabel">series-origins inside a zero run<br>of &ge; 28 days at the origin</div></div>
+</div><div class="card warn"><p>M5 has no inventory data. "Zero run" means recorded zero sales, never a confirmed stockout.
+All numbers: 1,200 M5 series, 4 rolling test origins × 28 days, warm series unless stated.</p></div></div></div>
+<div class="footer"><span>ForecastKit · Phase 2</span><span>1</span></div></section>
+<section class="slide"><div class="eyebrow">1 · Literature review & motivation</div><h1>What the literature offers, and the gap we test</h1><div class="body">
+<div class="col"><div class="card"><h3>Deep forecasters</h3><ul>
+<li><b>DeepAR</b> (Salinas 2020): global LSTM, NB likelihood, sampled paths. Our DL core.</li>
+<li>RNN practice (Hewamalage 2021): global training, scaling, explicit seasonality.</li>
+<li>MQ-RNN / TFT: quantiles only, no count pmf to fuse.</li></ul></div>
+<div class="card"><h3>Zeros in count data</h3><ul>
+<li><b>Hurdle</b> (Mullahy 1986): one process for zero vs positive.</li>
+<li><b>Zero-inflated</b> (Lambert 1992): extra zero state + count model.</li>
+<li>Deep renewal (Türkmen 2021): separate interval and size models.</li></ul></div></div>
+<div class="col"><div class="card"><h3>Hybrids</h3><ul>
+<li>ES-RNN (Smyl 2020), deep state space (Rangapuram 2018): components with <i>different roles</i>, not averaging.</li></ul></div>
+<div class="card accent"><h3>Gap</h3><p>When zero runs may be censoring, a <b>masked</b> likelihood learns demand but stops
+predicting recorded zeros; an <b>unmasked</b> one learns zeros as demand. Can a calibrated zero model + masked DeepAR
+give the best of both, and is it better than simply not masking?</p></div>
+<div class="card"><h3>Evaluation</h3><p>Pinball (proper), randomised PIT for counts (Czado 2009), Brier/log loss for P(0),
+paired bootstrap over series.</p></div></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>2</span></div></section>
+<section class="slide"><div class="eyebrow">2 · Dataset quality & DL data pipeline</div><h1>Windows, masks and validation never touch the test window</h1><div class="body">
+<div class="col"><div class="card"><h3>Data (unchanged from Phase 1)</h3><ul>
+<li>1,200 series (3 stores × 400 items), 1,000 days, 59% zero sales</li>
+<li>Test origins 2016-01-31 … 2016-04-24, H = 28; validation origin 2016-01-03</li>
+<li>84 simulated cold-start series (history hidden, not real launches)</li></ul></div>
+<div class="card"><h3>DeepAR sequences</h3><ul>
+<li>Window = 84-day context + 28-day target, sampled from the last 730 days of history</li>
+<li>Per-window scale ν = 1 + mean(context); inputs divided by ν</li>
+<li>Masked days enter as (0, flag = 0); excluded from the loss</li></ul></div></div>
+<div class="col"><div class="card accent"><h3>Leakage controls</h3><ul>
+<li>Context object is cut at the origin; masks recomputed on history</li>
+<li><b>Validation block</b> = last 28 days of history; training windows end before it</li>
+<li>Lags y(t−k): history if t−k ≤ T, else the path's own sample</li>
+<li>Tests: changing data after the origin leaves DeepAR, zero model and features bit-identical</li></ul></div>
+<div class="card"><h3>Reproducibility</h3><p>Phase 1 DeepAR re-run with the Phase 2 code: <b>0.0</b> max difference over
+1,075,200 forecast values. Seeds 42, 43, 44 for every DL comparison.</p></div></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>3</span></div></section>
+<section class="slide"><div class="eyebrow">3 · Feature engineering & regularisation</div><h1>DeepAR v2: chosen on the validation origin, not on test</h1><div class="body">
+<div class="col"><div class="card"><h3>Selection on validation origin 2016-01-03 (pinball, non-censored)</h3>
+<table class="small"><tr><th>variant</th><th class=n>pinball</th><th class=n>best step</th></tr><tr><td>Phase 1 DeepAR</td><td class=n>0.2750</td><td class=n>–</td></tr><tr><td>+ validation checkpoint</td><td class=n>0.2768</td><td class=n>2300</td></tr><tr class=hl><td>+ lags 7/14/28 (selected)</td><td class=n>0.2728</td><td class=n>2100</td></tr><tr><td>+ age</td><td class=n>0.2722</td><td class=n>2500</td></tr><tr><td>+ AdamW</td><td class=n>0.2721</td><td class=n>2500</td></tr></table>
+<p class="tiny">Rule fixed before running: lowest value; gaps &lt; 0.5% go to the simpler model. Age and AdamW were within
+the tie band, so not adopted.</p></div>
+<div class="card"><h3>Regularisation</h3><p>Dropout 0.1, item-id dropout 0.15, L2 1e-5, gradient clip 10, cosine LR,
+best checkpoint on validation NLL (patience 5). Early stopping never triggered: the step budget, not over-fitting, binds.</p></div></div>
+<div class="col" style="flex:1.7"><figure style="flex:1"><img src="../../results/phase2/figures/training_curves_deepar_v2.png">
+<figcaption>Train vs validation NLL per origin (seed 42). Dotted line = restored checkpoint. Later origins are fine-tuned from the previous weights.</figcaption></figure></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>4</span></div></section>
+<section class="slide"><div class="eyebrow">4 · Theoretical rigor</div><h1>One valid count distribution from two models</h1><div class="body">
+<div class="col"><div class="card"><h3>DeepAR v2</h3><div class="math">h<sub>t</sub> = LSTM(h<sub>t−1</sub>, [y<sub>t−1</sub>, y<sub>t−7</sub>, y<sub>t−14</sub>, y<sub>t−28</sub>]/ν, flags, x<sub>t</sub>, e<sub>i</sub>)<br>
+y<sub>t</sub> ~ NB(μ<sub>t</sub>, α<sub>t</sub>),&nbsp; E = μ, Var = μ + αμ²<br>p<sub>D</sub>(0) = (1/S) Σ<sub>s</sub> (r<sub>s</sub>/(r<sub>s</sub>+μ<sub>s</sub>))<sup>r<sub>s</sub></sup>, r = 1/α</div>
+<p class="tiny">NLL equals scipy's NB to 1e-8; sampler mean/variance/P(0) within 2%.</p></div>
+<div class="card"><h3>Zero-run model (LightGBM)</h3><div class="math">π<sub>h</sub> = P(y<sub>T+h</sub> = 0 | history to T)</div>
+<p class="tiny">Observable target (recorded zeros), proper log loss, early stopping on history.</p></div></div>
+<div class="col"><div class="card accent"><h3>Hurdle fusion</h3><div class="math">q(0) = π<sub>h</sub><br>q(y) = (1 − π<sub>h</sub>) p<sub>D</sub>(y) / (1 − p<sub>D</sub>(0)),&nbsp; y ≥ 1<br>
+Q(τ) = 0 if τ ≤ π, else F<sub>+</sub><sup>−1</sup>((τ−π)/(1−π))</div>
+<p>Sums to 1, non-negative, exact sampling (zero-truncated NB per path).</p></div>
+<div class="card warn"><h3>Why not zero-inflation?</h3><p>π·δ<sub>0</sub> + (1−π)p<sub>D</sub> has q(0) = π + (1−π)p<sub>D</sub>(0) &gt; π:
+DeepAR's zeros are counted twice. Kept as an ablation.</p></div></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>5</span></div></section>
+<section class="slide"><div class="eyebrow">4 · Theoretical rigor</div><h1>Hybrid architecture: each model does one job</h1><div class="body">
+<div class="col" style="flex:1.5"><figure style="flex:1"><img src="../../results/phase2/figures/hybrid_architecture.png"></figure></div>
+<div class="col"><div class="card"><h3>DL: how much</h3><p>Masked DeepAR = demand when the item sells normally; supplies the shape of positive sales.</p></div>
+<div class="card"><h3>ML: whether</h3><p>Run-length state is a sharp, tabular signal; trees exploit it. Supplies the zero mass.</p></div>
+<div class="card"><h3>Registered model</h3><p><code>deepar_hurdle</code> in the standard runner: same origins, masks, saved samples and metadata.</p></div></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>6</span></div></section>
+<section class="slide"><div class="eyebrow">5 · Model application</div><h1>Step 1: the zero model is validated on its own first</h1><div class="body">
+<div class="col"><div class="card"><h3>P(recorded zero), test cells (124,992)</h3><table class="small">
+<tr><th>predictor</th><th class=n>Brier</th><th class=n>log loss</th><th class=n>Brier, run ≥ 28 d</th></tr>
+<tr><td>series zero rate</td><td class=n>0.1915</td><td class=n>0.5643</td><td class=n>0.1387</td></tr><tr><td>zero rate, last 28 d</td><td class=n>0.1843</td><td class=n>0.6778</td><td class=n>0.1326</td></tr><tr><td>Kaplan–Meier renewal</td><td class=n>0.1893</td><td class=n>0.5710</td><td class=n>0.1114</td></tr><tr class=hl><td>LightGBM zero model</td><td class=n>0.1746</td><td class=n>0.5229</td><td class=n>0.1013</td></tr><tr><td>  without run features</td><td class=n>0.1748</td><td class=n>0.5235</td><td class=n>0.1014</td></tr><tr><td>DeepAR v2 p<sub>D</sub>(0)</td><td class=n>0.1826</td><td class=n>0.5442</td><td class=n>0.1723</td></tr><tr><td>DeepAR v2 unmasked p<sub>D</sub>(0)</td><td class=n>0.1754</td><td class=n>0.5255</td><td class=n>0.1024</td></tr>
+</table></div>
+<div class="card"><p>LightGBM − KM renewal Brier: <span class="pos">-0.0146</span> <span class="tiny">[-0.0169, -0.0126]</span>; − masked DeepAR: <span class="pos">-0.0079</span> <span class="tiny">[-0.0102, -0.0058]</span>.
+Against <b>unmasked</b> DeepAR the gain is not significant: <span class="">-0.0007</span> <span class="tiny">[-0.0015, +0.0000]</span>.</p></div></div>
+<div class="col"><figure style="flex:1"><img src="../../results/phase2/zero_model/reliability.png"><figcaption>Reliability of P(recorded zero), warm test cells.</figcaption></figure></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>7</span></div></section>
+<section class="slide"><div class="eyebrow">5 · Model application</div><h1>Main comparison: best on recorded sales, not on visible demand</h1><div class="body">
+<div class="col" style="flex:1.4"><div class="card"><table class="small">
+<tr><th>model</th><th class=n>WAPE all</th><th class=n>pinball all</th><th class=n>WAPE non-cens.</th><th class=n>pinball non-cens.</th><th class=n>pinball cold</th></tr>
+<tr><td>Seasonal naive 4 wk</td><td class=n>0.7724</td><td class=n>0.2899</td><td class=n>0.7591</td><td class=n>0.3092</td><td class=n>0.3188</td></tr><tr><td>Kalman</td><td class=n>0.7226</td><td class=n>0.2736</td><td class=n>0.6860</td><td class=n>0.2822</td><td class=n>0.3226</td></tr><tr><td>LightGBM</td><td class=n>0.7094</td><td class=n>0.2637</td><td class=n>0.6630</td><td class=n>0.2707</td><td class=n>0.2736</td></tr><tr><td>Kalman–LightGBM (P1 hybrid)</td><td class=n>0.7039</td><td class=n>0.2620</td><td class=n>0.6598</td><td class=n>0.2693</td><td class=n>0.2748</td></tr>
+<tr><td>Ensemble P1</td><td class=n>0.7030</td><td class=n>0.2623</td><td class=n>0.6647</td><td class=n>0.2706</td><td class=n>0.2832</td></tr><tr><td>DeepAR P1 ‡</td><td class=n>0.6948</td><td class=n>0.2612</td><td class=n>0.6644</td><td class=n>0.2721</td><td class=n>0.2766</td></tr><tr><td>DeepAR v2 ‡</td><td class=n>0.6913</td><td class=n>0.2606</td><td class=n>0.6634</td><td class=n>0.2720</td><td class=n>0.2733</td></tr>
+<tr><td>DeepAR v2 unmasked ‡</td><td class=n>0.6783</td><td class=n>0.2567</td><td class=n>0.6709</td><td class=n>0.2764</td><td class=n>0.2754</td></tr><tr><td>Zero model + empirical sizes</td><td class=n>0.6876</td><td class=n>0.2609</td><td class=n>0.6816</td><td class=n>0.2817</td><td class=n>0.2740</td></tr><tr class=hl><td>Hybrid ‡</td><td class=n>0.6707</td><td class=n>0.2533</td><td class=n>0.6644</td><td class=n>0.2734</td><td class=n>0.2721</td></tr>
+</table><p class="tiny">‡ mean of 3 seeds. All days = recorded sales; non-censored drops days in hindsight-flagged long zero runs.</p></div></div>
+<div class="col"><div class="card accent"><h3>Hybrid vs DeepAR v2 (3 seeds)</h3><p>all days: <span class="pos">-0.0073</span> <span class="tiny">[-0.0101, -0.0047]</span><br>non-censored: <span class="neg">+0.0013</span> <span class="tiny">[+0.0002, +0.0027]</span></p></div>
+<div class="card"><h3>Hybrid vs unmasked DeepAR</h3><p>all days: <span class="pos">-0.0034</span> <span class="tiny">[-0.0048, -0.0022]</span><br>non-censored: <span class="pos">-0.0030</span> <span class="tiny">[-0.0042, -0.0019]</span></p></div>
+<div class="card"><h3>Hybrid vs LightGBM</h3><p>all days: <span class="pos">-0.0103</span> <span class="tiny">[-0.0139, -0.0071]</span><br>non-censored: <span class="">+0.0027</span> <span class="tiny">[-0.0001, +0.0051]</span></p></div>
+<p class="tiny">Δ pinball, 95% paired bootstrap over series (1,000 draws). Green = significantly better, red = significantly worse.</p></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>8</span></div></section>
+<section class="slide"><div class="eyebrow">5 · Model application</div><h1>Ablations: every component's contribution, with confidence intervals</h1><div class="body">
+<div class="col"><div class="card"><table class="small"><tr><th>change (vs its baseline)</th><th class=n>Δ pinball all days [95% CI]</th><th class=n>Δ pinball non-censored [95% CI]</th></tr><tr><td>DeepAR P2 vs P1</td><td class=n><span class="">-0.0006</span> <span class="tiny">[-0.0013, +0.0001]</span></td><td class=n><span class="">-0.0000</span> <span class="tiny">[-0.0005, +0.0004]</span></td></tr><tr><td>Loss masking (DeepAR)</td><td class=n><span class="pos">-0.0039</span> <span class="tiny">[-0.0064, -0.0014]</span></td><td class=n><span class="neg">+0.0043</span> <span class="tiny">[+0.0028, +0.0061]</span></td></tr><tr><td>Hybrid vs DeepAR</td><td class=n><span class="pos">-0.0073</span> <span class="tiny">[-0.0101, -0.0047]</span></td><td class=n><span class="neg">+0.0013</span> <span class="tiny">[+0.0002, +0.0027]</span></td></tr><tr><td>No DL component</td><td class=n><span class="neg">+0.0072</span> <span class="tiny">[+0.0046, +0.0108]</span></td><td class=n><span class="neg">+0.0079</span> <span class="tiny">[+0.0051, +0.0121]</span></td></tr><tr><td>Fusion: naive ZI</td><td class=n><span class="neg">+0.0224</span> <span class="tiny">[+0.0212, +0.0235]</span></td><td class=n><span class="neg">+0.0263</span> <span class="tiny">[+0.0251, +0.0274]</span></td></tr><tr><td>Fusion: inflate-only ZI</td><td class=n><span class="neg">+0.0007</span> <span class="tiny">[+0.0004, +0.0010]</span></td><td class=n><span class="neg">+0.0009</span> <span class="tiny">[+0.0006, +0.0013]</span></td></tr><tr><td>Fusion: gated</td><td class=n><span class="neg">+0.0016</span> <span class="tiny">[+0.0004, +0.0028]</span></td><td class=n><span class="">-0.0003</span> <span class="tiny">[-0.0011, +0.0004]</span></td></tr></table>
+<p class="tiny">Negative = the change helps. Seeds: DeepAR P2 vs P1, masking and hybrid vs DeepAR use 3 seeds; others seed 42. Full table with WAPE: results/phase2/pairwise_bootstrap.csv.</p></div></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>9</span></div></section>
+<section class="slide"><div class="eyebrow">5 · Model application</div><h1>Calibration: the hurdle fixes masked DeepAR's zero mass</h1><div class="body">
+<div class="col" style="flex:1.3"><figure style="flex:1"><img src="../../results/phase2/figures/pit_histograms.png"><figcaption>Randomised PIT (flat = calibrated). Masked DeepAR piles mass at low PIT: too few zeros predicted.</figcaption></figure>
+<div class="card"><p>Max PIT deviation (seed 42): DeepAR v2 0.103, unmasked 0.050, hybrid <b>0.069</b>.</p></div></div>
+<div class="col"><figure style="flex:1"><img src="../../results/phase2/figures/zero_reliability_models.png"><figcaption>Reliability of each model's implied P(Y = 0).</figcaption></figure></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>10</span></div></section>
+<section class="slide"><div class="eyebrow">5 · Model application</div><h1>Where the hybrid fails, and what that means</h1><div class="body">
+<div class="col"><div class="card"><h3>Hybrid − DeepAR v2, pinball, by zero run at the origin</h3><table class="small">
+<tr><th>run at origin</th><th class=n>all days</th><th class=n>non-censored</th></tr>
+<tr><td>0 days</td><td class=n><span class="">-0.0013</span> <span class="tiny">[-0.0026, +0.0001]</span></td><td class=n><span class="">-0.0009</span> <span class="tiny">[-0.0022, +0.0007]</span></td></tr><tr><td>1-6 days</td><td class=n><span class="pos">-0.0013</span> <span class="tiny">[-0.0023, -0.0002]</span></td><td class=n><span class="">-0.0010</span> <span class="tiny">[-0.0019, +0.0001]</span></td></tr><tr><td>7-27 days</td><td class=n><span class="pos">-0.0120</span> <span class="tiny">[-0.0215, -0.0043]</span></td><td class=n><span class="neg">+0.0034</span> <span class="tiny">[+0.0000, +0.0078]</span></td></tr><tr><td>>=28 days</td><td class=n><span class="pos">-0.0618</span> <span class="tiny">[-0.0852, -0.0415]</span></td><td class=n><span class="neg">+0.0636</span> <span class="tiny">[+0.0348, +0.0999]</span></td></tr>
+</table></div>
+<div class="card warn"><h3>Failure case</h3><p>For series already in a long zero run, the hybrid predicts more zeros. When sales
+resume inside the window, those days (the non-censored ones) are forecast worse. The hybrid targets <b>recorded sales</b>;
+masked DeepAR remains the better <b>latent-demand</b> model there.</p></div></div>
+<div class="col"><div class="card"><h3>Honest reading</h3><ul>
+<li>Most of the all-days gain comes from the ~8% of series-origins in long zero runs.</li>
+<li>Unmasked DeepAR recovers much of the same gain without a second model; the hybrid is still significantly better than it on both views.</li>
+<li>Explicit run-length features add nothing measurable: rolling non-zero rates already carry the information.</li></ul></div></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>11</span></div></section>
+<section class="slide"><div class="eyebrow">6 · Final summary</div><h1>Limitations</h1><div class="body">
+<div class="col"><div class="card warn"><ul>
+<li><b>No inventory data.</b> The stockout proxy is a heuristic; "non-censored" is a proxy view of demand.</li>
+<li><b>One retailer, 3 stores, 4 origins in early 2016.</b> CIs reflect series variability, not other periods.</li>
+<li><b>3 seeds</b> for the main DL comparisons; ablations use one seed.</li>
+<li><b>Untuned</b> LightGBM and zero-model hyper-parameters; DeepAR selected on a single validation origin.</li>
+<li><b>Simulated cold start</b>: hidden history of existing products, not real launches.</li>
+<li><b>CPU budget</b>: no Transformer/TFT or deep renewal comparison.</li></ul></div></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>12</span></div></section>
+<section class="slide"><div class="eyebrow">6 · Final summary</div><h1>Conclusion</h1><div class="body">
+<div class="col"><div class="card accent"><h3>What we can claim</h3><ul>
+<li>DeepAR v2 (lags + validation checkpoint) vs Phase 1, 3 seeds: <span class="">-0.0006</span> <span class="tiny">[-0.0013, +0.0001]</span> pinball (all days).</li>
+<li>The hurdle hybrid has the lowest all-days WAPE and pinball of all models (0.6707 / 0.2533, 3 seeds),
+significantly better than DeepAR, unmasked DeepAR and LightGBM on recorded sales.</li>
+<li>Its zero mass is calibrated (flat PIT), and the naive ZI alternative is measurably worse.</li></ul></div>
+<div class="card warn"><h3>What we cannot claim</h3><ul><li>Better latent-demand forecasts: on non-censored days the Phase 1 Kalman–LightGBM is still best.</li>
+<li>Stockout prediction: no inventory labels exist.</li></ul></div></div></div><div class="footer"><span>ForecastKit · Phase 2 (Deep Learning)</span><span>13</span></div></section></body></html>

@@ -50,3 +50,23 @@ def coverage(y, lo, hi):
 
 def width(lo, hi):
     return float(np.mean(hi - lo))
+
+
+def randomized_pit(y, samples, rng=None):
+    """Randomised PIT for COUNT forecasts (Czado, Gneiting & Held 2009): u = F(y-1) + V [F(y) - F(y-1)],
+    V ~ U(0,1), with F the predictive CDF (here the empirical CDF of predictive samples along the LAST axis).
+    If the forecast is calibrated, u ~ U(0,1) exactly, even though y is discrete.
+    y [...]; samples [..., S] -> u [...]."""
+    rng = np.random.default_rng(0) if rng is None else rng
+    y = np.asarray(y, dtype=float)[..., None]
+    s = np.asarray(samples, dtype=float)
+    f_y = (s <= y).mean(-1)
+    f_ym1 = (s <= y - 1).mean(-1)
+    return f_ym1 + rng.random(f_y.shape) * (f_y - f_ym1)
+
+
+def pit_histogram(u, bins: int = 10):
+    """(density per bin, max |density - 1|): a flat histogram (density 1) means calibrated."""
+    h, _ = np.histogram(np.asarray(u).ravel(), bins=bins, range=(0, 1))
+    dens = h / max(h.sum(), 1) * bins
+    return dens, float(np.max(np.abs(dens - 1)))

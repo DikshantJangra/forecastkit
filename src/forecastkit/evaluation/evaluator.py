@@ -264,6 +264,51 @@ class Evaluator:
                          "series_win_rate": win})
         return pd.DataFrame(rows)
 
+    def paired_bootstrap(self, a, b, metric="WAPE", v=None, n_boot=2000, seed=0) -> dict:
+        """Paired bootstrap of metric(a) - metric(b) with SERIES as the resampling unit (days of one series are
+        autocorrelated, so they are never resampled independently). `a`/`b` are a model name or a list of
+        replicate models (e.g. seeds): their per-series loss numerators are averaged, i.e. the comparison is
+        between seed-averaged errors on identical cells. Negative diff = `a` better. Also returns the per-origin
+        point differences (sign consistency across the rolling origins)."""
+        a = [a] if isinstance(a, str) else list(a)
+        b = [b] if isinstance(b, str) else list(b)
+        v = self.valid(~self.cold) if v is None else v
+        keep = np.where(v.any((0, 2)))[0]
+
+        def parts(models, vv):
+            if metric == "WAPE":
+                num = np.mean([(self.err[m].AE * vv).sum((0, 2)) for m in models], 0)
+                den = (self.Y * vv).sum((0, 2))
+            elif metric == "pinball":
+                num = np.mean([(self.err[m].PB * vv).sum((0, 2)) for m in models], 0)
+                den = vv.sum((0, 2)).astype(float)
+            elif metric == "MAE":
+                num = np.mean([(self.err[m].AE * vv).sum((0, 2)) for m in models], 0)
+                den = vv.sum((0, 2)).astype(float)
+            else:
+                raise ValueError(metric)
+            return num[keep], den[keep]
+
+        na, da = parts(a, v)
+        nb, db = parts(b, v)
+        rng = np.random.default_rng(seed)
+        idx = rng.integers(0, len(keep), size=(n_boot, len(keep)))
+        d = na[idx].sum(1) / np.maximum(da[idx].sum(1), 1e-9) - nb[idx].sum(1) / np.maximum(db[idx].sum(1), 1e-9)
+        point = na.sum() / max(da.sum(), 1e-9) - nb.sum() / max(db.sum(), 1e-9)
+        lo, hi = np.percentile(d, [2.5, 97.5])
+        per_origin = []
+        for o in range(len(self.origins)):
+            vo = v.copy()
+            vo[np.arange(len(self.origins)) != o] = False
+            x, y = parts(a, vo), parts(b, vo)
+            per_origin.append(x[0].sum() / max(x[1].sum(), 1e-9) - y[0].sum() / max(y[1].sum(), 1e-9))
+        with np.errstate(all="ignore"):
+            win = float(np.mean((na / np.maximum(da, 1e-9)) < (nb / np.maximum(db, 1e-9))))
+        return {"a": "+".join(a), "b": "+".join(b), "metric": metric, "diff": float(point), "ci_low": float(lo),
+                "ci_high": float(hi), "significant": bool(lo > 0 or hi < 0), "n_series": int(len(keep)),
+                "series_win_rate_a": win, "origins_a_better": int(np.sum(np.array(per_origin) < 0)),
+                "n_origins": len(per_origin), "per_origin_diff": ";".join(f"{x:+.4f}" for x in per_origin)}
+
     def all_tables(self) -> dict:
         t = {"main_all_days": self.main_table("all"), "main_non_censored": self.main_table("non_censored"),
              "by_horizon": self.by_horizon(), "by_slice": self.by_slice(),
