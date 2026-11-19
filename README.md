@@ -12,6 +12,23 @@
 
 The final presentation was exported from slide software (PDF metadata: PptxGenJS, LibreOffice). Its editable source is not in the repository. Older PDFs with synthetic numbers are in [`archive/superseded/`](archive/superseded/README.md) and should not be graded.
 
+## Phase 2 (Deep Learning + ML/DL hybrid)
+
+| | File |
+|---|---|
+| IEEE report (6 pages) | [`paper/forecastkit_phase2.pdf`](paper/forecastkit_phase2.pdf) (source `paper/forecastkit_phase2.tex`) |
+| Presentation (13 slides) | [`slides/phase2_presentation.pdf`](slides/phase2_presentation.pdf) (source `slides/phase2/build_deck.py`) |
+| Results summary / full tables | [`docs/PHASE2_RAPID_RESULTS.md`](docs/PHASE2_RAPID_RESULTS.md), `results/phase2/` |
+| Theory, literature, ledger, status | `docs/PHASE2_THEORY.md`, `docs/LITERATURE_REVIEW.md` (addendum), `docs/PHASE2_EXPERIMENT_LEDGER.md`, `docs/PHASE2_RAPID_STATUS.md` |
+| Reproduction | [`docs/PHASE2_REPRODUCE.md`](docs/PHASE2_REPRODUCE.md) |
+
+New models: `deepar` gains seasonal lags, a history validation block with best-checkpoint restore and exported
+samples (defaults unchanged, Phase 1 reproduces exactly); `deepar_hurdle` (`src/forecastkit/models/hybrid.py`)
+joins masked DeepAR with a LightGBM zero-run persistence model (`src/forecastkit/zerorun/`) through a hurdle
+distribution. On recorded sales it has the lowest WAPE / pinball (0.6707 / 0.2533, 3 seeds); on days outside long
+zero runs it does not beat masked DeepAR or the Phase 1 Kalman-LightGBM. "Zero run" means recorded zero sales,
+not a confirmed stockout. Tests: `pytest -q` (65, ~10 s); CI: `.github/workflows/tests.yml`.
+
 ## Models compared
 
 | Name in results | Model | Code |

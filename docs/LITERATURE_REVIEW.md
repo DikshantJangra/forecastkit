@@ -115,3 +115,164 @@ No references are unverified. Two notes on the entries above:
 
 - Croston (1972) was published in *Operational Research Quarterly* (Vol. 23, No. 3, pp. 289-303). Crossref returns two DOIs for this article: 10.2307/3007885 (JSTOR stable record, which lists only the start page 289) and 10.1057/jors.1972.50 (the publisher record under the journal's later name, Journal of the Operational Research Society, with full pages 289-303). We cite the publisher DOI, which carries the complete page range.
 - Ke et al. (2017), LightGBM, was published in the NeurIPS 2017 proceedings, which do not mint DOIs. It is verified instead against the official NeurIPS proceedings page, which lists the title, all eight authors, and the volume (Advances in Neural Information Processing Systems 30).
+
+---
+
+# Phase 2 addendum: deep learning, intermittent counts and hybrid forecasting
+
+Sections 1-12 above are the Phase 1 review and are unchanged. This addendum covers the literature behind the
+Phase 2 design decisions. Every reference was checked on 2026-11-19 (DOIs through api.crossref.org; arXiv,
+NeurIPS, ICLR and JMLR entries on the publisher pages).
+
+## 13. Recurrent networks for forecasting
+
+LSTMs (Hochreiter & Schmidhuber, 1997) add gated memory cells to RNNs, which mitigates vanishing gradients and
+lets the state carry information over long lags. Hewamalage, Bergmeir and Bandara (2021) benchmark RNN forecasters
+across many datasets. Their findings that matter here: RNNs need per-series normalisation, they are competitive
+mainly when trained *globally* across many related series, and they are sensitive to the input window and
+to how seasonality is presented. Bandara, Bergmeir and Smyl (2020) show that global RNNs gain when they are trained
+on groups of similar series.
+
+*Relevance to ForecastKit.* DeepAR is a global LSTM with mean scaling, which matches these recommendations. The
+DeepAR inputs in Phase 1 were only y_{t-1} and covariates, so the weekly and monthly pattern had to be carried by
+the state. Following the advice on presenting seasonality explicitly, Phase 2 adds seasonal lags 7/14/28 and
+tests them on a validation origin before using them (ledger E02).
+
+## 14. DeepAR and probabilistic deep forecasters
+
+DeepAR (Salinas et al., 2020) trains an autoregressive LSTM by maximum likelihood with a parametric output
+distribution (negative binomial for counts) and produces forecasts by ancestral sampling. MQ-RNN (Wen et al., 2017)
+outputs quantiles directly for all horizons (direct, non-sampled). Temporal Fusion Transformers (Lim et al., 2021)
+combine recurrent encoders, attention and variable selection for interpretable multi-horizon quantile forecasts.
+
+*Relevance.* We kept DeepAR because (i) the negative binomial gives a full count distribution, and the hybrid
+needs its zero mass and positive-part shape, which quantile-only models (MQ-RNN, TFT) do not provide; (ii)
+its loss can be masked per day, which is how censoring is handled; (iii) its compute cost fits a CPU-only budget.
+TFT is a natural next step but would need a count likelihood to plug into the same fusion.
+
+## 15. Deep learning for intermittent demand
+
+Türkmen, Januschowski, Wang and Cemgil (2021) recast intermittent demand as a renewal process: a model of
+inter-demand intervals plus a model of demand sizes, both parameterised by RNNs ("deep renewal processes"). This
+generalises Croston's size/interval decomposition (Section 2) to a probabilistic, global model. Jeon and Seong
+(2022) propose a robust RNN for intermittent series in which the network is trained to handle the bursty structure
+of sparse sales.
+
+*Relevance.* Both papers support splitting the problem into "when is there a sale" and "how much is sold". The
+ForecastKit hybrid makes the same split, but assigns the "when" part to a gradient-boosted classifier using
+explicit run-duration features and keeps a single DeepAR for the size part. Our Kaplan-Meier renewal baseline is
+the non-learned version of the interval model.
+
+## 16. Zero-inflated and hurdle count models
+
+Zero-inflated models (Lambert, 1992) treat the data as a mixture of a degenerate "always zero" state and a count
+distribution, P(0) = pi + (1 - pi) f(0). Hurdle models (Mullahy, 1986) instead use one binary process for zero vs.
+positive and a zero-truncated count distribution for positive values, P(0) = pi. The two differ in where zeros come
+from: ZI models have zeros from two sources, hurdle models from one.
+
+*Relevance.* This distinction is the core design choice of the Phase 2 fusion. Our ML component is trained on
+the event "recorded sales = 0", so it already estimates the total zero mass. Mixing it ZI-style with DeepAR
+counts DeepAR's zeros twice. The hurdle form uses it directly. Both forms are implemented and compared
+(ablation "Fusion: naive ZI").
+
+## 17. Statistical + neural hybrids and deep state-space models
+
+The M4 winner (Smyl, 2020) is a hybrid in which per-series exponential smoothing parameters provide level and
+seasonality and a global RNN learns the remaining dynamics. Deep State Space Models (Rangapuram et al., 2018)
+let an RNN output the parameters of per-series linear-Gaussian state-space models. Deep Factors (Wang et al., 2019)
+combine global deep factors with local probabilistic models.
+
+*Relevance.* These hybrids give each component a different role inside one probabilistic model. Averaging
+outputs does not do that. This is the standard our hybrid is held to. Our Phase 1 Kalman-LightGBM is a
+feature-level ML+ML hybrid. The Phase 2 hybrid is a distribution-level ML+DL hybrid. The deep state-space route
+(an RNN feeding a Kalman filter) was considered, but the Gaussian state-space likelihood fits sparse counts
+poorly (Section 6), which is the problem we are trying to solve.
+
+## 18. Training and regularisation
+
+Early stopping on a held-out validation set (Prechelt, 1998) and dropout (Srivastava et al., 2014) are the
+standard regularisers for RNNs. Loshchilov and Hutter (2019) show that L2 regularisation and weight decay are not
+equivalent for adaptive optimisers such as Adam and propose decoupled weight decay (AdamW).
+
+*Relevance.* Phase 1 used Adam with a small coupled L2 penalty and a fixed step budget. Phase 2 adds a validation
+block inside the history with best-checkpoint restore and implements AdamW. AdamW is kept only if it helps on the
+validation origin (it fell inside the tie band and was not adopted).
+
+## 19. Evaluating probabilistic count forecasts
+
+Gneiting, Balabdaoui and Raftery (2007) define the paradigm "maximise sharpness subject to calibration".
+For count data the standard PIT is not uniform even for a correct model. Czado, Gneiting and Held (2009) give the
+randomised PIT, which is uniform under calibration, and discuss proper scores for counts. Kolassa (2016)
+shows for retail count forecasts that point-error measures can favour wrong distributions, and recommends
+proper scoring rules. For comparing forecasts, Diebold and Mariano (1995) test equal predictive accuracy on loss
+differentials. With dependent observations, block resampling (Künsch, 1989) keeps the dependence structure.
+
+*Relevance.* Phase 2 reports pinball loss (proper for quantiles), randomised PIT histograms, and the Brier score
+and log loss of P(Y = 0), in addition to WAPE. Significance uses a paired bootstrap with whole series as the
+resampling unit, so a series' days are never treated as independent draws.
+
+## 20. Phase 2 comparison table
+
+| Approach | Zeros handled by | Output | Hybrid type | In ForecastKit |
+|---|---|---|---|---|
+| DeepAR (Salinas et al., 2020) | NB likelihood only | sample paths | - | yes (P1, v2) |
+| MQ-RNN / TFT | quantile loss | quantiles | - | no |
+| Deep renewal processes (Türkmen et al., 2021) | RNN interval model | sample paths | DL+DL decomposition | no (KM renewal baseline instead) |
+| ES-RNN (Smyl, 2020) | - | point / intervals | statistical + DL | no |
+| Deep state space (Rangapuram et al., 2018) | Gaussian SSM | distribution | DL -> statistical | no |
+| ZI models (Lambert, 1992) | mixture with extra zero state | distribution | - | ablation `zi_naive` |
+| Hurdle models (Mullahy, 1986) | separate binary process | distribution | - | **fusion of the hybrid** |
+| Kalman-LightGBM (ours, P1) | - | quantiles | statistical features -> ML | yes |
+| DeepAR + zero-run hurdle (ours, P2) | LightGBM zero model + DeepAR positive part | distribution | ML + DL (distribution level) | yes |
+
+## 21. Gap addressed in Phase 2
+
+Published intermittent-demand deep models learn zeros either inside the count likelihood (DeepAR) or with a
+dedicated neural interval model (deep renewal processes). They assume the recorded zeros are demand. When long
+zero runs may be censoring (stockouts, delisting), a masked likelihood is needed to learn demand, but then
+the model no longer predicts recorded zeros. ForecastKit Phase 2 tests whether a separately trained,
+calibrated zero-run persistence model, joined to a masked DeepAR through a hurdle, can forecast recorded sales
+without giving up the latent-demand model. It also checks whether the gain is more than the effect of simply not
+masking. The answer is reported in `results/phase2/` and in the report, including where it is negative.
+
+## 22. Phase 2 references
+
+Bandara, K., Bergmeir, C., & Smyl, S. (2020). Forecasting across time series databases using recurrent neural networks on groups of similar series: A clustering approach. *Expert Systems with Applications*, 140, 112896. https://doi.org/10.1016/j.eswa.2019.112896
+
+Czado, C., Gneiting, T., & Held, L. (2009). Predictive model assessment for count data. *Biometrics*, 65(4), 1254-1261. https://doi.org/10.1111/j.1541-0420.2009.01191.x
+
+Diebold, F. X., & Mariano, R. S. (1995). Comparing predictive accuracy. *Journal of Business & Economic Statistics*, 13(3), 253-263. https://doi.org/10.1080/07350015.1995.10524599
+
+Gneiting, T., Balabdaoui, F., & Raftery, A. E. (2007). Probabilistic forecasts, calibration and sharpness. *Journal of the Royal Statistical Society: Series B*, 69(2), 243-268. https://doi.org/10.1111/j.1467-9868.2007.00587.x
+
+Hewamalage, H., Bergmeir, C., & Bandara, K. (2021). Recurrent neural networks for time series forecasting: Current status and future directions. *International Journal of Forecasting*, 37(1), 388-427. https://doi.org/10.1016/j.ijforecast.2020.06.008
+
+Hochreiter, S., & Schmidhuber, J. (1997). Long short-term memory. *Neural Computation*, 9(8), 1735-1780. https://doi.org/10.1162/neco.1997.9.8.1735
+
+Jeon, Y., & Seong, S. (2022). Robust recurrent network model for intermittent time-series forecasting. *International Journal of Forecasting*, 38(4), 1415-1425. https://doi.org/10.1016/j.ijforecast.2021.07.004
+
+Kaplan, E. L., & Meier, P. (1958). Nonparametric estimation from incomplete observations. *Journal of the American Statistical Association*, 53(282), 457-481. https://doi.org/10.1080/01621459.1958.10501452
+
+Künsch, H. R. (1989). The jackknife and the bootstrap for general stationary observations. *The Annals of Statistics*, 17(3), 1217-1241. https://doi.org/10.1214/aos/1176347265
+
+Lambert, D. (1992). Zero-inflated Poisson regression, with an application to defects in manufacturing. *Technometrics*, 34(1), 1-14. https://doi.org/10.2307/1269547
+
+Lim, B., Arık, S. Ö., Loeff, N., & Pfister, T. (2021). Temporal Fusion Transformers for interpretable multi-horizon time series forecasting. *International Journal of Forecasting*, 37(4), 1748-1764. https://doi.org/10.1016/j.ijforecast.2021.03.012
+
+Loshchilov, I., & Hutter, F. (2019). Decoupled weight decay regularization. *International Conference on Learning Representations (ICLR)*. arXiv:1711.05101
+
+Mullahy, J. (1986). Specification and testing of some modified count data models. *Journal of Econometrics*, 33(3), 341-365. https://doi.org/10.1016/0304-4076(86)90002-3
+
+Prechelt, L. (1998). Early stopping - but when? In *Neural Networks: Tricks of the Trade* (LNCS 1524, pp. 55-69). Springer. https://doi.org/10.1007/3-540-49430-8_3
+
+Rangapuram, S. S., Seeger, M. W., Gasthaus, J., Stella, L., Wang, Y., & Januschowski, T. (2018). Deep state space models for time series forecasting. *Advances in Neural Information Processing Systems 31 (NeurIPS 2018)*.
+
+Smyl, S. (2020). A hybrid method of exponential smoothing and recurrent neural networks for time series forecasting. *International Journal of Forecasting*, 36(1), 75-85. https://doi.org/10.1016/j.ijforecast.2019.03.017
+
+Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., & Salakhutdinov, R. (2014). Dropout: A simple way to prevent neural networks from overfitting. *Journal of Machine Learning Research*, 15(56), 1929-1958.
+
+Türkmen, A. C., Januschowski, T., Wang, Y., & Cemgil, A. T. (2021). Forecasting intermittent and sparse time series: A unified probabilistic framework via deep renewal processes. *PLOS ONE*, 16(11), e0259764. https://doi.org/10.1371/journal.pone.0259764
+
+Wang, Y., Smola, A., Maddix, D., Gasthaus, J., Foster, D., & Januschowski, T. (2019). Deep factors for forecasting. *Proceedings of the 36th International Conference on Machine Learning (ICML), PMLR 97*. arXiv:1905.12417
+
+Wen, R., Torkkola, K., Narayanaswamy, B., & Madeka, D. (2017). A multi-horizon quantile recurrent forecaster. arXiv:1711.11053 (NIPS 2017 Time Series Workshop).

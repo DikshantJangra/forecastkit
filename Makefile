@@ -1,5 +1,6 @@
 # One-command reproduction.   make smoke  (2 min, synthetic)   |   make m5  (real M5 after download)
 PY ?= python
+CHROME ?= /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
 CFG ?= configs/m5.yaml
 
 install:
@@ -77,3 +78,26 @@ slides:
 	PYTHON=$(PY) sh slides/build.sh
 
 .PHONY: eda paper slides
+
+
+# ---- Phase 2 ----
+phase2-runs:
+	PY="$(PY)" JOBS=5 sh scripts/phase2_run_all.sh
+
+phase2-zero:
+	$(PY) scripts/phase2_zero_model.py --config configs/m5.yaml --out results/phase2/zero_model \
+	  --deepar deepar_v2_masked=outputs/phase2/runs/deepar_v2_s42/artifacts/deepar_v2 \
+	  --deepar deepar_v2_unmasked=outputs/phase2/runs/deepar_v2_nomask_s42/artifacts/deepar_v2_nomask \
+	  --deepar deepar_p1=outputs/phase2/runs/deepar_p1_s42/artifacts/deepar_p1
+
+phase2-results:
+	$(PY) scripts/phase2_e02_table.py
+	$(PY) scripts/phase2_analysis.py
+
+paper2:
+	cd paper && tectonic -X compile forecastkit_phase2.tex
+
+slides2:
+	PYTHON="$(PY)" CHROME="$(CHROME)" sh slides/phase2/build.sh
+
+.PHONY: phase2-runs phase2-zero phase2-results paper2 slides2

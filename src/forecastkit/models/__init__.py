@@ -11,3 +11,7 @@ try:
     from .deepar import DeepARForecaster  # noqa: F401
 except ImportError:  # pragma: no cover
     pass
+try:
+    from .hybrid import DeepARHurdle  # noqa: F401
+except ImportError:  # pragma: no cover
+    pass

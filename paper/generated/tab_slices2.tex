@@ -1,0 +1,20 @@
+\begin{table}[t]
+\caption{Hybrid minus DeepAR v2 (3 seeds each), mean pinball, by the causal zero-run state at the origin and by demand class. * = 95\% CI excludes 0.}
+\label{tab:slices2}
+\centering
+\footnotesize
+\resizebox{\columnwidth}{!}{\begin{tabular}{@{}lrrr@{}}
+\toprule
+Slice & series & $\Delta$ all days & $\Delta$ non-cens.\\
+\midrule
+zero run at origin 0 & 878 & -0.0013 & -0.0009\\
+zero run at origin 1-6 & 794 & -0.0013* & -0.0010\\
+zero run at origin 7-27 & 341 & -0.0120* & +0.0034*\\
+zero run at origin $\ge$28 & 185 & -0.0618* & +0.0636*\\
+class: intermittent & 839 & -0.0046* & +0.0007\\
+class: lumpy & 162 & -0.0121* & +0.0019\\
+class: smooth & 87 & -0.0101 & +0.0021\\
+class: erratic & 27 & -0.0526 & +0.0157\\
+\bottomrule
+\end{tabular}}
+\end{table}

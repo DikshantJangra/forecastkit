@@ -46,7 +46,7 @@ def make_synthetic_m5(out_dir, n_items: int = 40, n_days: int = 800, stores=("CA
 
     # ---- demand ------------------------------------------------------------
     dept_week = {d: np.clip(rng.normal(1, 0.35, 7), 0.4, None) for d in DEPTS}
-    dept_year_amp = {c: rng.uniform(0.05, 0.3) for c in set(DEPTS.values())}
+    dept_year_amp = {c: rng.uniform(0.05, 0.3) for c in sorted(set(DEPTS.values()))}  # sorted: hash-seed independent
     items = []
     for i in range(n_items):
         dept = list(DEPTS)[rng.choice(len(DEPTS), p=[.08, .1, .12, .12, .18, .2, .2])]

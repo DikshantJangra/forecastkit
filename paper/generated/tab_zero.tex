@@ -1,0 +1,21 @@
+\begin{table}[t]
+\caption{Zero-run persistence model (E04): scores of $P(y_{T+h}=0)$ on the test cells of warm series. ECE: 10-bin expected calibration error.}
+\label{tab:zero}
+\centering
+\footnotesize
+\resizebox{\columnwidth}{!}{\begin{tabular}{@{}lcccc|cc@{}}
+\toprule
+& \multicolumn{4}{c|}{All warm cells (124,992)} & \multicolumn{2}{c}{Run $\ge$28 d at origin}\\
+Predictor & Brier & Log loss & ECE & AUC & Brier & Log loss\\
+\midrule
+Series zero rate & 0.1915 & 0.5643 & 0.0329 & 0.774 & 0.1387 & 0.4385\\
+Zero rate, last 28 d & 0.1843 & 0.6778 & 0.0393 & 0.792 & 0.1326 & 1.8325\\
+Kaplan--Meier renewal & 0.1893 & 0.5710 & 0.0684 & 0.789 & 0.1114 & 0.4805\\
+\textbf{LightGBM zero model} & 0.1746 & 0.5229 & 0.0075 & 0.810 & 0.1013 & 0.3437\\
+\quad without run features & 0.1748 & 0.5235 & 0.0080 & 0.809 & 0.1014 & 0.3451\\
+DeepAR P1 $p_D(0)$ & 0.1850 & 0.5497 & 0.0341 & 0.788 & 0.2018 & 0.6026\\
+DeepAR v2 $p_D(0)$ & 0.1826 & 0.5442 & 0.0259 & 0.792 & 0.1723 & 0.5355\\
+DeepAR v2 unmasked $p_D(0)$ & 0.1754 & 0.5255 & 0.0066 & 0.808 & 0.1024 & 0.3543\\
+\bottomrule
+\end{tabular}}
+\end{table}
